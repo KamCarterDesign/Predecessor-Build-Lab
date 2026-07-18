@@ -11,7 +11,16 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+  console.warn('Missing NEXT_PUBLIC_FIREBASE_API_KEY. Did you forget to add your environment variables to Vercel?');
+}
+
+const app = getApps().length > 0 ? getApp() : initializeApp({
+  ...firebaseConfig,
+  // Provide a dummy key during server-side build if missing, to prevent build crashes.
+  // The client will still need the real key from environment variables.
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'dummy-key-for-build',
+});
 
 const auth = getAuth(app);
 const db = getFirestore(app);
