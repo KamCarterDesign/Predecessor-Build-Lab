@@ -1,0 +1,50 @@
+{
+  "name": "predecessor-build-lab",
+  "version": "1.0.0",
+  "description": "Predecessor Labs — Intelligent companion app for the game Predecessor",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "sync:heroes": "npx tsx scripts/sync-heroes.ts",
+    "sync:items": "npx tsx scripts/sync-items.ts",
+    "sync:eternals": "npx tsx scripts/sync-eternals.ts",
+    "sync:matches": "npx tsx scripts/sync-matches.ts",
+    "sync:stats": "npx tsx scripts/sync-hero-statistics.ts",
+    "sync:feed": "npx tsx scripts/sync-feed.ts",
+    "sync:all": "npm run sync:heroes && npm run sync:items && npm run sync:eternals && npm run sync:feed",
+    "compute:synergy": "npx tsx scripts/compute-synergy.ts",
+    "compute:meta": "npx tsx scripts/compute-meta-snapshot.ts",
+    "compute:narrative": "npx tsx scripts/compute-meta-narrative.ts"
+  },
+  "keywords": [
+    "predecessor",
+    "moba",
+    "gaming",
+    "companion"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.11.0",
+    "@stripe/stripe-js": "^9.10.0",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "firebase": "^12.16.0",
+    "firebase-admin": "^14.1.0",
+    "next": "^16.2.10",
+    "node-fetch": "^3.3.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "stripe": "^22.3.2",
+    "tsx": "^4.23.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "typescript": "7.0.2"
+  }
+}

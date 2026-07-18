@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "sync:heroes": "npx tsx scripts/sync-heroes.ts",
+    "sync:items": "npx tsx scripts/sync-items.ts",
+    "sync:eternals": "npx tsx scripts/sync-eternals.ts",
+    "sync:matches": "npx tsx scripts/sync-matches.ts",
+    "sync:stats": "npx tsx scripts/sync-hero-statistics.ts",
+    "sync:all": "npm run sync:heroes && npm run sync:items && npm run sync:eternals",
+    "compute:synergy": "npx tsx scripts/compute-synergy.ts",
+    "compute:meta": "npx tsx scripts/compute-meta-snapshot.ts",
+    "compute:narrative": "npx tsx scripts/compute-meta-narrative.ts"
+  }
+}
