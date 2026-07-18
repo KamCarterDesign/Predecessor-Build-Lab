@@ -751,50 +751,6 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
         {/* ── 1. LAB TAB ──────────────────────────────────────────────────────── */}
         {activeTab === 'lab' && (
           <div>
-            {/* Premium Settings Bar */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>⭐ Premium Subscription Mock:</span>
-                <button
-                  onClick={() => setIsPremium(!isPremium)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    background: isPremium ? '#10b981' : '#6b7280',
-                    color: 'white'
-                  }}
-                >
-                  {isPremium ? 'Premium Active' : 'Free Mode (Stripe Gate)'}
-                </button>
-              </div>
-
-              {isPremium && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>AI Provider:</label>
-                  <select
-                    value={aiProvider}
-                    onChange={(e) => setAiProvider(e.target.value as any)}
-                    style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '6px', color: 'white', fontSize: '0.85rem' }}
-                  >
-                    <option value="gemini">Gemini (Default)</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="claude">Claude</option>
-                  </select>
-
-                  <input
-                    type="password"
-                    placeholder="Optional API Key override"
-                    value={aiApiKey}
-                    onChange={(e) => setAiApiKey(e.target.value)}
-                    style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '0.85rem', width: '180px' }}
-                  />
-                </div>
-              )}
-            </div>
-
             {!selectedHero ? (
               // HERO SELECTION GRID
               <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
@@ -2762,22 +2718,10 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
           </div>
         </div>
       )}
-
-      {/* ── DRAFT TAB ───────────────────────────────────────────────────────────── */}
-      {activeTab === 'draft' && (
-        <DraftBoard heroes={heroes} />
-      )}
-
       {/* ── PROFILE TAB ─────────────────────────────────────────────────────────── */}
       {activeTab === 'profile' && (
         <ProfileDashboard onLoginClick={() => setIsAuthModalOpen(true)} />
       )}
-
-      {/* ── COACHING TAB ────────────────────────────────────────────────────────── */}
-      {activeTab === 'coaching' && (
-        <PlayerDashboard />
-      )}
-
       {/* ── BOTTOM NAVIGATION BAR ────────────────────────────────────────────── */}
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(17, 24, 39, 0.85)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'center', padding: '10px 0', zIndex: 90 }}>
         <div style={{ display: 'flex', gap: '32px' }}>
