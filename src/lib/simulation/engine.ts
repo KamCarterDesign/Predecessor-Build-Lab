@@ -146,29 +146,217 @@ function getStatAtLevel(statArray: number[], level: number): number {
 }
 
 const HERO_OUTLIERS: Record<string, { strengths: string[]; weaknesses: string[] }> = {
-  zinx: {
-    strengths: ['[Hero: Zinx] Exceptional healing and sustain capabilities in combat.'],
-    weaknesses: ['[Hero: Zinx] Vulnerable to anti-heal effects (Tainted items).']
+  adele: {
+    strengths: ['[Hero: Adele] Strong area control and shield mechanics.'],
+    weaknesses: ['[Hero: Adele] Relies on landing skillshots for survivability.']
   },
-  greystone: {
-    strengths: ['[Hero: Greystone] Passive health regeneration and second life ultimate offer massive survivability.'],
-    weaknesses: ['[Hero: Greystone] Lacks hard crowd control (stuns/roots) to peel for allies.']
+  akeron: {
+    strengths: ['[Hero: Akeron] Long-range physical poke and execute potential.'],
+    weaknesses: ['[Hero: Akeron] Fragile and highly vulnerable to gap-closing assassins.']
+  },
+  argus: {
+    strengths: ['[Hero: Argus] Exceptional continuous crowd control and zone control.'],
+    weaknesses: ['[Hero: Argus] High mana consumption and low base movement speed.']
+  },
+  aurora: {
+    strengths: ['[Hero: Aurora] Exceptional crowd control, freezing enemies and creating terrain.'],
+    weaknesses: ['[Hero: Aurora] High ability cooldowns; vulnerable when skills are on cooldown.']
+  },
+  bayle: {
+    strengths: ['[Hero: Bayle] High physical burst and duel pressure.'],
+    weaknesses: ['[Hero: Bayle] Limited escape tools once committed to a fight.']
+  },
+  boris: {
+    strengths: ['[Hero: Boris] Extreme health scaling and single-target lockdown.'],
+    weaknesses: ['[Hero: Boris] Slow attack animations and easily kited by ranged heroes.']
   },
   countess: {
     strengths: ['[Hero: Countess] Passive deals percentage damage when triggered, granting extreme burst against squishies.'],
     weaknesses: ['[Hero: Countess] Very fragile and easily shut down by hard crowd control.']
   },
+  crunch: {
+    strengths: ['[Hero: Crunch] Unmatched ability-chaining combos and sustained close-combat damage.'],
+    weaknesses: ['[Hero: Crunch] Relies heavily on continuous basic attacks; shut down by blinds or disarms.']
+  },
+  dekker: {
+    strengths: ['[Hero: Dekker] Outstanding long-range stuns, speed boosts, and containment cage ultimate.'],
+    weaknesses: ['[Hero: Dekker] Very low individual damage output.']
+  },
+  drongo: {
+    strengths: ['[Hero: Drongo] Unique silence grenade to disrupt ability casters and shred armor.'],
+    weaknesses: ['[Hero: Drongo] Lacks dynamic movement or dash abilities.']
+  },
+  eden: {
+    strengths: ['[Hero: Eden] High shield generation and utility for lane sustain.'],
+    weaknesses: ['[Hero: Eden] Weak early game pressure.']
+  },
+  'feng-mao': {
+    strengths: ['[Hero: Feng Mao] High mobility, shielding, and reset-based execute ultimate.'],
+    weaknesses: ['[Hero: Feng Mao] Squishy for a frontliner and relies on precise execution timing.']
+  },
+  gadget: {
+    strengths: ['[Hero: Gadget] High magical power scaling and long-range area control.'],
+    weaknesses: ['[Hero: Gadget] Squishy and lacks high mobility options.']
+  },
+  gideon: {
+    strengths: ['[Hero: Gideon] High-impact AoE black hole ultimate and long-range teleport.'],
+    weaknesses: ['[Hero: Gideon] Ultimate channels in place, making him a vulnerable target during use.']
+  },
+  greystone: {
+    strengths: ['[Hero: Greystone] Passive health regeneration and second life ultimate offer massive survivability.'],
+    weaknesses: ['[Hero: Greystone] Lacks hard crowd control (stuns/roots) to peel for allies.']
+  },
+  'grim-exe': {
+    strengths: ['[Hero: Grim.exe] Shield that blocks incoming abilities and long-range homing ultimate.'],
+    weaknesses: ['[Hero: Grim.exe] Very large hitbox makes him easy to hit with skillshots.']
+  },
+  grux: {
+    strengths: ['[Hero: Grux] Exceptional bleed passive, pull, and knock-up crowd control.'],
+    weaknesses: ['[Hero: Grux] Kited easily in open spaces if double dash is down.']
+  },
+  howitzer: {
+    strengths: ['[Hero: Howitzer] Excellent long-range zoning, self-peel knockbacks, and evasive ultimate.'],
+    weaknesses: ['[Hero: Howitzer] Huge hitbox for a caster hero.']
+  },
   'iggy-scorch': {
     strengths: ['[Hero: Iggy & Scorch] Zone control and high damage over time from turrets.'],
     weaknesses: ['[Hero: Iggy & Scorch] Immobile: Lacks escape or movement abilities, making them vulnerable to ganks.']
+  },
+  ikra: {
+    strengths: ['[Hero: Ikra] Sustained healing and strong front-line engagement.'],
+    weaknesses: ['[Hero: Ikra] Vulnerable to anti-heal items.']
+  },
+  kallari: {
+    strengths: ['[Hero: Kallari] Stealth, global presence, and high physical burst from shadows.'],
+    weaknesses: ['[Hero: Kallari] Extremely low health pool; dies quickly if detected.']
+  },
+  khaimera: {
+    strengths: ['[Hero: Khaimera] Infinite health regen scaling from continuous hits and early duel potential.'],
+    weaknesses: ['[Hero: Khaimera] Lacks an escape tool once jumped in; weak against anti-heal.']
+  },
+  kira: {
+    strengths: ['[Hero: Kira] High mobility dash and percentage-based true damage.'],
+    weaknesses: ['[Hero: Kira] Low basic attack range compared to other carries.']
+  },
+  kwang: {
+    strengths: ['[Hero: Kwang] High utility tether, self-shielding, and AoE magical/physical burst.'],
+    weaknesses: ['[Hero: Kwang] Committing without landing the sword tether heavily reduces impact.']
+  },
+  legion: {
+    strengths: ['[Hero: Legion] Outstanding team shielding and crowd control.'],
+    weaknesses: ['[Hero: Legion] Low solo damage and relies on team follow-up.']
+  },
+  'lt-belica': {
+    strengths: ['[Hero: Lt. Belica] Mana-drain drone and ultimate that deals damage based on enemy missing mana.'],
+    weaknesses: ['[Hero: Lt. Belica] Low base mobility and vulnerable when drone is destroyed.']
+  },
+  maco: {
+    strengths: ['[Hero: Maco] Unique healing area-of-effect and crowd control.'],
+    weaknesses: ['[Hero: Maco] Slow projectile speeds on primary skills.']
+  },
+  morigesh: {
+    strengths: ['[Hero: Morigesh] Target-lock doll marking and global execute ultimate.'],
+    weaknesses: ['[Hero: Morigesh] Short ability range forces close proximity to threats.']
+  },
+  mourn: {
+    strengths: ['[Hero: Mourn] High health regeneration and physical burst.'],
+    weaknesses: ['[Hero: Mourn] Easily shut down by crowd control.']
+  },
+  murdock: {
+    strengths: ['[Hero: Murdock] Global sniper ultimate that ignores armor and traps for zone control.'],
+    weaknesses: ['[Hero: Murdock] Lacks a dash or escape ability besides a short knockback.']
+  },
+  muriel: {
+    strengths: ['[Hero: Muriel] Global shield ultimate to save allies anywhere and strong mitigation.'],
+    weaknesses: ['[Hero: Muriel] No hard crowd control to stop enemy channelings.']
+  },
+  narbash: {
+    strengths: ['[Hero: Narbash] Exceptional area healing, speed boosts, and AoE knockup ultimate.'],
+    weaknesses: ['[Hero: Narbash] High mana consumption; ultimate can be interrupted by stuns.']
+  },
+  neon: {
+    strengths: ['[Hero: Neon] High single-target lock-on ability damage.'],
+    weaknesses: ['[Hero: Neon] Squishy and lacks dynamic escape tools.']
+  },
+  phase: {
+    strengths: ['[Hero: Phase] Pulls allies to safety, links for health regen share, and blinds enemies.'],
+    weaknesses: ['[Hero: Phase] Completely reliant on having a linked ally to be effective.']
+  },
+  rampage: {
+    strengths: ['[Hero: Rampage] Massive health regen and size increase in ultimate, and long stun rock.'],
+    weaknesses: ['[Hero: Rampage] Stun rock has a long wind-up time and is easily dodged.']
+  },
+  renna: {
+    strengths: ['[Hero: Renna] Soul collection passive that scales ability damage late game.'],
+    weaknesses: ['[Hero: Renna] Weak early game before acquiring sufficient soul stacks.']
+  },
+  revenant: {
+    strengths: ['[Hero: Revenant] High physical burst from reload basic attacks and isolation ultimate.'],
+    weaknesses: ['[Hero: Revenant] Fixed reload time slows down continuous DPS in teamfights.']
+  },
+  riktor: {
+    strengths: ['[Hero: Riktor] Game-changing long-range hook, silences, and AoE stun ultimate.'],
+    weaknesses: ['[Hero: Riktor] Missed hooks leave him vulnerable and waste high mana.']
+  },
+  serath: {
+    strengths: ['[Hero: Serath] High physical damage scaling, invulnerability frame, and chase capability.'],
+    weaknesses: ['[Hero: Serath] Fragile melee carry that is easily focused down.']
+  },
+  sevarog: {
+    strengths: ['[Hero: Sevarog] Infinite scaling: gaining health/power from siphon minion kills.'],
+    weaknesses: ['[Hero: Sevarog] Weak early game; heavily penalized if stacks are not farmed.']
+  },
+  shinbi: {
+    strengths: ['[Hero: Shinbi] Exceptional self-shielding, mobility, and long-range stack execute.'],
+    weaknesses: ['[Hero: Shinbi] Lacks any hard crowd control (stuns/roots) to peel.']
+  },
+  skylar: {
+    strengths: ['[Hero: Skylar] High aerial mobility and long-range missile barrages.'],
+    weaknesses: ['[Hero: Skylar] Vulnerable to anti-air crowd control and grounding effects.']
+  },
+  sparrow: {
+    strengths: ['[Hero: Sparrow] Unmatched continuous basic attack scaling and attack speed buffs.'],
+    weaknesses: ['[Hero: Sparrow] Absolutely no mobility or defensive skills; highly vulnerable to ganks.']
   },
   steel: {
     strengths: ['[Hero: Steel] Outstanding crowd control chain and shields for team blocking.'],
     weaknesses: ['[Hero: Steel] Low basic attack scaling and poor single-target damage output.']
   },
-  gadget: {
-    strengths: ['[Hero: Gadget] High magical power scaling and long-range area control.'],
-    weaknesses: ['[Hero: Gadget] Squishy and lacks high mobility options.']
+  terra: {
+    strengths: ['[Hero: Terra] CC-immune ultimate, stun, and shield block.'],
+    weaknesses: ['[Hero: Terra] Low mobility when ultimate is not active.']
+  },
+  'the-fey': {
+    strengths: ['[Hero: The Fey] Extreme AoE pull ultimate, slow, and mana-refund poke.'],
+    weaknesses: ['[Hero: The Fey] Zero mobility skills makes her an easy target for dive heroes.']
+  },
+  twinblast: {
+    strengths: ['[Hero: Twinblast] Double basic-attack passive, rapid dash, and high-range ultimate.'],
+    weaknesses: ['[Hero: Twinblast] Low health pool and highly reliant on items for scaling.']
+  },
+  wraith: {
+    strengths: ['[Hero: Wraith] Invisibility, rewind-back utility, and long-range ward/snipe.'],
+    weaknesses: ['[Hero: Wraith] High skill floor; missing rewind or snipe heavily reduces utility.']
+  },
+  wukong: {
+    strengths: ['[Hero: Wukong] Clone-based pushing power and high double-jump mobility.'],
+    weaknesses: ['[Hero: Wukong] Lacks burst damage; relies on sustained basic attacks.']
+  },
+  yin: {
+    strengths: ['[Hero: Yin] Projectile reflection, whip-cleave range, and wind barrier.'],
+    weaknesses: ['[Hero: Yin] Highly vulnerable to melee dive when whip range is down.']
+  },
+  yurei: {
+    strengths: ['[Hero: Yurei] Shadow step mobility and high single-target burst.'],
+    weaknesses: ['[Hero: Yurei] Squishy and easily locked down by AoE crowd control.']
+  },
+  zarus: {
+    strengths: ['[Hero: Zarus] Cage duel ultimate that permanently gains power on kills, and stun.'],
+    weaknesses: ['[Hero: Zarus] Duel cage can trap teammates if placed poorly.']
+  },
+  zinx: {
+    strengths: ['[Hero: Zinx] Exceptional healing and sustain capabilities in combat.'],
+    weaknesses: ['[Hero: Zinx] Vulnerable to anti-heal effects (Tainted items).']
   }
 }
 
@@ -476,29 +664,8 @@ export function calculateBuildStats(
     objective_damage: clampVal(baseDna.objective_damage + itemDna.objective_damage),
   }
 
-  // Build identity tag from top-2 dimensions
-  const dnaArray = [
-    { name: 'Burst', score: dna.burst },
-    { name: 'Sustain', score: dna.sustain },
-    { name: 'Tankiness', score: dna.tankiness },
-    { name: 'Scaling', score: dna.scaling },
-    { name: 'Mobility', score: dna.mobility },
-    { name: 'Utility', score: dna.utility },
-    { name: 'Objective Damage', score: dna.objective_damage },
-  ]
-  dnaArray.sort((a, b) => b.score - a.score)
-  const top1 = dnaArray[0]?.name || ''
-  const top2 = dnaArray[1]?.name || ''
-
-  let identityTag = 'Balanced Companion'
-  if (top1 === 'Tankiness' && top2 === 'Sustain') identityTag = 'Frontline Juggernaut'
-  else if (top1 === 'Tankiness' && top2 === 'Utility') identityTag = 'Vanguard Protector'
-  else if (top1 === 'Burst' && top2 === 'Mobility') identityTag = 'Skirmishing Assassin'
-  else if (top1 === 'Burst' && top2 === 'Scaling') identityTag = 'Late-Game Hypercarrier'
-  else if (top1 === 'Sustain' && top2 === 'Scaling') identityTag = 'Durable Duelist'
-  else if (top1 === 'Burst') identityTag = `Burst-focused ${hero.classes[0] || 'Hero'}`
-  else if (top1 === 'Tankiness') identityTag = `Resilient ${hero.classes[0] || 'Bruiser'}`
-  else identityTag = `${top1} & ${top2} Specialist`
+  // Build identity tag is removed for now
+  const identityTag = ''
 
   // 6. Strengths and Weaknesses
   const strengths: string[] = []
@@ -538,16 +705,21 @@ export function calculateBuildStats(
   const physicalItemsCount = items.filter(i => (i.stats.physical_power || 0) > 0).length;
   const magicalItemsCount = items.filter(i => (i.stats.magical_power || i.stats.energy_power || 0) > 0).length;
 
-  if (hero.classes?.includes('Mage') && physicalItemsCount >= 3) {
-    confidenceScore -= 25;
-    confidenceBreakdown.push('! Class mismatch: Physical power items built on Magical scaling Mage hero');
-  } else if ((hero.classes?.includes('Carry') || hero.classes?.includes('Assassin')) && magicalItemsCount >= 3) {
-    confidenceScore -= 25;
-    confidenceBreakdown.push('! Class mismatch: Magical power items built on Physical scaling Carry/Assassin');
-  } else {
-    confidenceScore += 15;
-    confidenceBreakdown.push('✓ Suitability: Items match the hero\'s primary scaling attributes');
+  const scalesMagical = !!(hero.base_stats.magical_power && hero.base_stats.magical_power.some(v => v > 0)) || hero.classes?.includes('Mage');
+  const scalesPhysical = hero.classes?.includes('Carry') || hero.classes?.includes('Assassin') || (!scalesMagical && hero.classes?.includes('Fighter'));
+
+  let suitabilityDelta = 0;
+  if (scalesMagical && physicalItemsCount >= 2) {
+    suitabilityDelta = -15 * physicalItemsCount;
+    confidenceBreakdown.push(`! Attribute Mismatch: Built ${physicalItemsCount} Physical Power items on a Magical scaling hero (${hero.display_name})`);
+  } else if (scalesPhysical && magicalItemsCount >= 2) {
+    suitabilityDelta = -15 * magicalItemsCount;
+    confidenceBreakdown.push(`! Attribute Mismatch: Built ${magicalItemsCount} Magical Power items on a Physical scaling hero (${hero.display_name})`);
+  } else if (physicalItemsCount > 0 || magicalItemsCount > 0) {
+    suitabilityDelta = 20;
+    confidenceBreakdown.push('✓ Attribute Match: Items align with the hero\'s primary scaling damage types');
   }
+  confidenceScore += suitabilityDelta;
 
   // Factor 2: Synergy Checks (Item History)
   let synergyHits = 0
@@ -556,7 +728,7 @@ export function calculateBuildStats(
     for (const item of allEquippedItems) {
       const key = `${hero.slug}:${item.slug}`
       const scoreObj = options.synergies[key]
-      if (scoreObj && scoreObj.sample_size > 50) {
+      if (scoreObj && scoreObj.sample_size > 10) {
         synergyHits++
         synergySum += scoreObj.avg_win_rate
       }
@@ -565,16 +737,13 @@ export function calculateBuildStats(
 
   if (synergyHits > 0) {
     const avgSynergyWin = (synergySum / synergyHits) * 100
-    if (avgSynergyWin > 52) {
-      confidenceScore += 25
-      confidenceBreakdown.push(`✓ High Synergy History: Equipped items have a >52% historical win rate`);
-    } else {
-      confidenceScore += 10
-      confidenceBreakdown.push(`~ Moderate Synergy History: Equipped items align with standard meta builds`);
-    }
+    const winrateDiff = avgSynergyWin - 50;
+    const historyDelta = Math.round(winrateDiff * 2.5);
+    confidenceScore += historyDelta;
+    confidenceBreakdown.push(`✓ History Statistics: Equipped items have a ${avgSynergyWin.toFixed(1)}% average historical win rate on ${hero.display_name} (${historyDelta >= 0 ? '+' : ''}${historyDelta}% confidence)`);
   } else {
-    confidenceScore -= 10
-    confidenceBreakdown.push('! Unorthodox items: limited matching match synergy records');
+    confidenceScore -= 15;
+    confidenceBreakdown.push('! Off-Meta Choice: No historical popularity statistics found for this item combination on this hero');
   }
 
   // Factor 3: Build Completeness
@@ -610,7 +779,6 @@ export function calculateBuildStats(
   // 9. Free-Tier report generation
   const report = `
 ### Build Report — ${hero.display_name} — Level ${level}
-**Identity Tag:** ${identityTag}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Build Totals:**

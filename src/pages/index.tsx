@@ -63,6 +63,16 @@ export async function getServerSideProps() {
   }
 }
 
+const dnaTooltips: Record<string, string> = {
+  burst: "Burst factors in power (magical/physical depending on scaling) multiplied by critical strike or penetration, representing your potential to deal massive damage quickly. It compares level 1 baselines and accounts for item power, penetrations, and basic attack crits.",
+  tankiness: "Tankiness is based on a hero's health, armor, and stat growth over time. Since base stats are factored in, no hero starts at 0, and naturally sturdier heroes like Steel will scale and widen the gap against squishier heroes like Gadget.",
+  scaling: "Scaling tracks flat values added by stacking passive abilities (e.g. Renna's soul stacks, Gadget's magic power stacks), items that scale over time (like Overlord health stacks from unit kills), and Eternals. Excludes standard level stat growth; if none are present, it remains 0.",
+  mobility: "Mobility is calculated from base movement speed, movement speed growth, and dash/teleport abilities, enhanced by flat percentage increases from items, abilities, and Eternals.",
+  objective_damage: "Objective Damage represents the capability to deal increased damage to monsters, minions, or structures. It sums flat percentage increases provided by hero abilities, items, or Eternals.",
+  sustain: "Sustain measures health regeneration, shields, healing abilities, and lifesteal or omnivamp sources from your kit and items.",
+  utility: "Utility represents crowd control capabilities, including stuns, slows, silences, pulls, and roots from abilities and item passives.",
+}
+
 export default function Dashboard({ heroes = [], items = [], eternals = [], feedItems = [], metaSnapshots = [], metaNarratives = [] }: DashboardProps) {
   // ── Tab State ──────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<'lab' | 'feed' | 'library' | 'saved' | 'meta' | 'profile'>('lab')
@@ -625,9 +635,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
 
     let matchupText = 'No enemy selected.';
     if (matchupResult) {
-      matchupText = 'Offensive Axis: Your Hero ' + matchupResult.offensive.heroAValue + '/10 vs Enemy Hero ' + matchupResult.offensive.heroBValue + '/10\n' +
-                    'Defensive Axis: Your Hero ' + matchupResult.defensive.heroAValue + '/10 vs Enemy Hero ' + matchupResult.defensive.heroBValue + '/10\n' +
-                    'Neutral Axis: Your Hero ' + matchupResult.neutral.heroAValue + '/10 vs Enemy Hero ' + matchupResult.neutral.heroBValue + '/10';
+      matchupText = 'Offensive Axis:\n' + matchupResult.offensive.explanation + '\n\n' +
+                    'Defensive Axis:\n' + matchupResult.defensive.explanation + '\n\n' +
+                    'Neutral Axis:\n' + matchupResult.neutral.explanation;
     }
 
     let shareText = '🔥 PREDECESSOR BUILD LAB REPORT 🔥\n' +
@@ -1587,9 +1597,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                       <span>{labelInfo.icon}</span> <span>{labelInfo.label}</span>
                                     </strong>
                                     <div style={{ display: 'flex', gap: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                      <span style={{ color: '#3b82f6' }}>{selectedHero.display_name}: {data.heroAValue}/10</span>
+                                      <span style={{ color: '#3b82f6' }}>{selectedHero.display_name}</span>
                                       <span style={{ color: '#94a3b8' }}>vs</span>
-                                      <span style={{ color: '#a855f7' }}>{selectedHeroB.display_name}: {data.heroBValue}/10</span>
+                                      <span style={{ color: '#a855f7' }}>{selectedHeroB.display_name}</span>
                                     </div>
                                   </div>
                                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0, lineHeight: '1.4' }}>{data.explanation}</p>
@@ -1628,10 +1638,10 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   >
                                     <span style={{ textTransform: 'capitalize', color: '#cbd5e1', display: 'flex', alignItems: 'center' }}>
                                       {dim.replace('_', ' ')}
-                                      {dim === 'burst' && (
+                                      {dnaTooltips[dim] && (
                                         <span 
-                                          style={{ marginLeft: '6px', cursor: 'help', color: '#ef4444', fontSize: '0.85rem' }}
-                                          title="Burst Calculation: Combines level 1 power stats, ability damage and scaling factors, item physical/magical power additions, critical strike chance, and critical multipliers, scaled by physical & magical flat/percentage penetrations."
+                                          style={{ marginLeft: '6px', cursor: 'help', color: '#38bdf8', fontSize: '0.85rem' }}
+                                          title={dnaTooltips[dim]}
                                         >
                                           ℹ️
                                         </span>
