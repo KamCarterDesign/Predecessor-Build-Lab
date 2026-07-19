@@ -293,7 +293,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
         for (const stat of activeStatFilters) {
           if (stat === 'magical_power' && !((item.stats.magical_power || 0) > 0 || (item.stats.energy_power || 0) > 0)) matchesStats = false;
           if (stat === 'physical_power' && !((item.stats.physical_power || 0) > 0)) matchesStats = false;
-          if (stat === 'omnivamp' && !((item.stats.omnivamp || 0) > 0 || (item.stats.lifesteal || 0) > 0)) matchesStats = false;
+          if (stat === 'omnivamp' && !((item.stats.omnivamp || 0) > 0)) matchesStats = false;
+          if (stat === 'lifesteal' && !((item.stats.lifesteal || 0) > 0)) matchesStats = false;
+          if (stat === 'magical_lifesteal' && !((item.stats.magical_lifesteal || 0) > 0)) matchesStats = false;
           if (stat === 'health' && !((item.stats.max_health || 0) > 0 || (item.stats.health || 0) > 0)) matchesStats = false;
           if (stat === 'physical_armor' && !((item.stats.physical_armor || 0) > 0)) matchesStats = false;
           if (stat === 'magical_armor' && !((item.stats.magical_armor || 0) > 0)) matchesStats = false;
@@ -1267,9 +1269,11 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                             { key: 'ability_haste', label: 'Ability Haste', iconId: 'AbilityHaste' },
                             { key: 'crit_chance', label: 'Critical Chance', iconId: 'CritIconGold' },
                             { key: 'health', label: 'Health', iconId: 'HealthIconGreen' },
+                            { key: 'lifesteal', label: 'Lifesteal', iconId: 'Lifesteal' },
                             { key: 'magical_armor', label: 'Magical Armor', iconId: 'MRIcon' },
+                            { key: 'magical_lifesteal', label: 'Magical Lifesteal', iconId: 'MagicalLifesteal' },
                             { key: 'magical_power', label: 'Magical Power', iconId: 'APIconBlue' },
-                            { key: 'omnivamp', label: 'Omnivamp', iconId: 'Lifesteal' },
+                            { key: 'omnivamp', label: 'Omnivamp', iconId: 'Omnivamp' },
                             { key: 'physical_armor', label: 'Physical Armor', iconId: 'ArmorOrange' },
                             { key: 'physical_power', label: 'Physical Power', iconId: 'ADIconOrange' },
                           ].map((stat) => {
@@ -1350,7 +1354,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
                                   else if (statKey.includes('haste')) iconId = 'AbilityHaste';
                                   else if (statKey.includes('crit')) iconId = 'CritIconGold';
-                                  else if (statKey.includes('lifesteal') || statKey.includes('omnivamp')) iconId = 'Lifesteal';
+                                  else if (statKey.includes('magical_lifesteal')) iconId = 'MagicalLifesteal';
+                                  else if (statKey.includes('lifesteal')) iconId = 'Lifesteal';
+                                  else if (statKey.includes('omnivamp')) iconId = 'Omnivamp';
                                   return (
                                     <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
                                       <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
@@ -1411,7 +1417,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
                                   else if (statKey.includes('haste')) iconId = 'AbilityHaste';
                                   else if (statKey.includes('crit')) iconId = 'CritIconGold';
-                                  else if (statKey.includes('lifesteal') || statKey.includes('omnivamp')) iconId = 'Lifesteal';
+                                  else if (statKey.includes('magical_lifesteal')) iconId = 'MagicalLifesteal';
+                                  else if (statKey.includes('lifesteal')) iconId = 'Lifesteal';
+                                  else if (statKey.includes('omnivamp')) iconId = 'Omnivamp';
                                   return (
                                     <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
                                       <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />

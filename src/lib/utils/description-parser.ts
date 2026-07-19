@@ -4,30 +4,27 @@
  */
 export function getStatIconHtml(id: string, size: number = 14): string {
   const mapping: Record<string, { color: string, svg: string }> = {
-    ADIconOrange: { color: '#f97316', svg: '<path d="M18 3h3v3L9 18l-3-3L18 3z M6 18l-3 3 M4 17l3 3"/>' }, // Sword
-    HealthIconGreen: { color: '#22c55e', svg: '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>' }, // Heart
-    ArmorOrange: { color: '#f59e0b', svg: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' }, // Shield
-    MRIcon: { color: '#a855f7', svg: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M12 8v8 M8 12h8"/>' }, // Magic Shield
-    APIconBlue: { color: '#60a5fa', svg: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>' }, // Lightning
-    AbilityHaste: { color: '#eab308', svg: '<path d="M5 2h14 M5 22h14 M19 2l-7 8-7-8 M5 22l7-8 7 8"/>' }, // Hourglass
-    CritIconGold: { color: '#f43f5e', svg: '<circle cx="12" cy="12" r="8"/><path d="M12 2v4 M12 18v4 M2 12h4 M18 12h4"/>' }, // Target
-    PhysPen: { color: '#fb923c', svg: '<path d="m14.5 17.5-2.5 2.5-4-4 2.5-2.5 M5 19 19 5 M19 5h-4 M19 5v4"/>' }, // Dagger
-    ManaBlue: { color: '#3b82f6', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>' }, // Potion / Droplet
-    ASIconOrange: { color: '#fbbf24', svg: '<path d="M17 11l-5-5-5 5 M17 18l-5-5-5 5"/>' }, // Chevrons
-    AttackSpeedIcon: { color: '#fbbf24', svg: '<path d="M17 11l-5-5-5 5 M17 18l-5-5-5 5"/>' },
-    BonusDamage: { color: '#facc15', svg: '<path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275z"/>' },
-    Lifesteal: { color: '#ef4444', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>' },
+    ADIconOrange: { color: '#f97316', svg: '<path d="M18 3h3v3L9 18l-3-3L18 3z M6 18l-3 3 M4 17l3 3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' }, // Sword
+    HealthIconGreen: { color: '#22c55e', svg: '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/>' }, // Heart
+    ArmorOrange: { color: '#f59e0b', svg: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' }, // Shield
+    MRIcon: { color: '#a855f7', svg: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M12 8v8 M8 12h8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' }, // Magic Shield
+    APIconBlue: { color: '#60a5fa', svg: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>' }, // Lightning
+    AbilityHaste: { color: '#eab308', svg: '<path d="M5 2h14 M5 22h14 M19 2l-7 8-7-8 M5 22l7-8 7 8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' }, // Hourglass
+    CritIconGold: { color: '#f43f5e', svg: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M12 2v4 M12 18v4 M2 12h4 M18 12h4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>' }, // Target
+    PhysPen: { color: '#fb923c', svg: '<path d="m14.5 17.5-2.5 2.5-4-4 2.5-2.5 M5 19 19 5 M19 5h-4 M19 5v4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' }, // Dagger
+    ManaBlue: { color: '#3b82f6', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="currentColor"/>' }, // Potion / Droplet
+    ASIconOrange: { color: '#fbbf24', svg: '<path d="M17 11l-5-5-5 5 M17 18l-5-5-5 5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' }, // Chevrons
+    AttackSpeedIcon: { color: '#fbbf24', svg: '<path d="M17 11l-5-5-5 5 M17 18l-5-5-5 5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' },
+    BonusDamage: { color: '#facc15', svg: '<path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275z" fill="currentColor"/>' },
+    Lifesteal: { color: '#ef4444', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="currentColor"/>' }, // Red droplet
+    MagicalLifesteal: { color: '#d946ef', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="currentColor"/><path d="M12 7l-2 5.5h3l-2 5.5 5-7h-3.5z" fill="#ffffff"/>' }, // Purple droplet with lightning
+    Omnivamp: { color: '#f43f5e', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="currentColor"/><path d="M4 14c2.5-3 5.5-3 8 0 M20 14c-2.5-3-5.5-3-8 0" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>' }, // Winged droplet
   };
 
   const item = mapping[id];
   if (!item) return '✨';
 
-  // Check if we need fill or stroke
-  const isFilled = id === 'HealthIconGreen' || id === 'APIconBlue' || id === 'ManaBlue' || id === 'BonusDamage' || id === 'Lifesteal';
-  const fillVal = isFilled ? item.color : 'none';
-  const strokeVal = isFilled ? 'none' : 'currentColor';
-
-  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="${fillVal}" stroke="${strokeVal}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-top:-2px; margin-right:4px; color:${item.color};">${item.svg}</svg>`;
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="display:inline-block; vertical-align:middle; margin-top:-2px; margin-right:4px; color:${item.color};">${item.svg}</svg>`;
 }
 
 export function parseDescription(text: string): string {
