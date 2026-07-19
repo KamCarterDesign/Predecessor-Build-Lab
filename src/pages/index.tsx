@@ -4,7 +4,7 @@ import { getFirestore } from '@/lib/firebase-admin'
 import { calculateBuildStats, HeroDoc, ItemDoc, EternalDoc, BuildAnalysisResult, BuildDna } from '@/lib/simulation/engine'
 import { calculateMatchupScore } from '@/lib/simulation/matchup'
 import { explainDeterministic, ExplanationResult } from '@/lib/simulation/rules-engine'
-import { parseDescription } from '@/lib/utils/description-parser'
+import { parseDescription, getStatIconHtml } from '@/lib/utils/description-parser'
 import { useAuth } from '@/lib/auth-context'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { ProfileDashboard } from '@/components/profile/ProfileDashboard'
@@ -1264,14 +1264,14 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                         {/* Stat Filters */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                           {[
-                            { key: 'ability_haste', label: 'Ability Haste', icon: '⌛' },
-                            { key: 'crit_chance', label: 'Critical Chance', icon: '💥' },
-                            { key: 'health', label: 'Health', icon: '❤️' },
-                            { key: 'magical_armor', label: 'Magical Armor', icon: '🛡️' },
-                            { key: 'magical_power', label: 'Magical Power', icon: '🔮' },
-                            { key: 'omnivamp', label: 'Omnivamp', icon: '🩸' },
-                            { key: 'physical_armor', label: 'Physical Armor', icon: '🛡️' },
-                            { key: 'physical_power', label: 'Physical Power', icon: '🗡️' },
+                            { key: 'ability_haste', label: 'Ability Haste', iconId: 'AbilityHaste' },
+                            { key: 'crit_chance', label: 'Critical Chance', iconId: 'CritIconGold' },
+                            { key: 'health', label: 'Health', iconId: 'HealthIconGreen' },
+                            { key: 'magical_armor', label: 'Magical Armor', iconId: 'MRIcon' },
+                            { key: 'magical_power', label: 'Magical Power', iconId: 'APIconBlue' },
+                            { key: 'omnivamp', label: 'Omnivamp', iconId: 'Lifesteal' },
+                            { key: 'physical_armor', label: 'Physical Armor', iconId: 'ArmorOrange' },
+                            { key: 'physical_power', label: 'Physical Power', iconId: 'ADIconOrange' },
                           ].map((stat) => {
                             const isActive = activeStatFilters.includes(stat.key);
                             return (
@@ -1298,7 +1298,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   transition: 'all 0.2s',
                                 }}
                               >
-                                <span>{stat.icon}</span>
+                                <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(stat.iconId, 16) }} />
                                 <span>{stat.label}</span>
                               </button>
                             );
@@ -1341,19 +1341,20 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                 {Object.entries(item.stats || {}).map(([statKey, val]) => {
                                   if (!val) return null;
                                   const statLabel = statKey.replace('_', ' ');
-                                  let emoji = '✨';
-                                  if (statKey.includes('health')) emoji = '❤️';
-                                  else if (statKey.includes('mana')) emoji = '💧';
-                                  else if (statKey.includes('physical_power')) emoji = '🗡️';
-                                  else if (statKey.includes('magical_power') || statKey.includes('energy_power')) emoji = '🔮';
-                                  else if (statKey.includes('physical_armor')) emoji = '🛡️';
-                                  else if (statKey.includes('magical_armor')) emoji = '🛡️';
-                                  else if (statKey.includes('haste')) emoji = '⌛';
-                                  else if (statKey.includes('crit')) emoji = '💥';
-                                  else if (statKey.includes('lifesteal') || statKey.includes('omnivamp')) emoji = '🩸';
+                                  let iconId = 'BonusDamage';
+                                  if (statKey.includes('health')) iconId = 'HealthIconGreen';
+                                  else if (statKey.includes('mana')) iconId = 'ManaBlue';
+                                  else if (statKey.includes('physical_power')) iconId = 'ADIconOrange';
+                                  else if (statKey.includes('magical_power') || statKey.includes('energy_power')) iconId = 'APIconBlue';
+                                  else if (statKey.includes('physical_armor')) iconId = 'ArmorOrange';
+                                  else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
+                                  else if (statKey.includes('haste')) iconId = 'AbilityHaste';
+                                  else if (statKey.includes('crit')) iconId = 'CritIconGold';
+                                  else if (statKey.includes('lifesteal') || statKey.includes('omnivamp')) iconId = 'Lifesteal';
                                   return (
-                                    <span key={statKey} style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
-                                      {emoji} {val} {statLabel}
+                                    <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
+                                      <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
+                                      {val} {statLabel}
                                     </span>
                                   );
                                 })}
@@ -1401,19 +1402,20 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                 {Object.entries(crestItem.stats || {}).map(([statKey, val]) => {
                                   if (!val) return null;
                                   const statLabel = statKey.replace('_', ' ');
-                                  let emoji = '✨';
-                                  if (statKey.includes('health')) emoji = '❤️';
-                                  else if (statKey.includes('mana')) emoji = '💧';
-                                  else if (statKey.includes('physical_power')) emoji = '🗡️';
-                                  else if (statKey.includes('magical_power') || statKey.includes('energy_power')) emoji = '🔮';
-                                  else if (statKey.includes('physical_armor')) emoji = '🛡️';
-                                  else if (statKey.includes('magical_armor')) emoji = '🛡️';
-                                  else if (statKey.includes('haste')) emoji = '⌛';
-                                  else if (statKey.includes('crit')) emoji = '💥';
-                                  else if (statKey.includes('lifesteal') || statKey.includes('omnivamp')) emoji = '🩸';
+                                  let iconId = 'BonusDamage';
+                                  if (statKey.includes('health')) iconId = 'HealthIconGreen';
+                                  else if (statKey.includes('mana')) iconId = 'ManaBlue';
+                                  else if (statKey.includes('physical_power')) iconId = 'ADIconOrange';
+                                  else if (statKey.includes('magical_power') || statKey.includes('energy_power')) iconId = 'APIconBlue';
+                                  else if (statKey.includes('physical_armor')) iconId = 'ArmorOrange';
+                                  else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
+                                  else if (statKey.includes('haste')) iconId = 'AbilityHaste';
+                                  else if (statKey.includes('crit')) iconId = 'CritIconGold';
+                                  else if (statKey.includes('lifesteal') || statKey.includes('omnivamp')) iconId = 'Lifesteal';
                                   return (
-                                    <span key={statKey} style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
-                                      {emoji} {val} {statLabel}
+                                    <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
+                                      <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
+                                      {val} {statLabel}
                                     </span>
                                   );
                                 })}
