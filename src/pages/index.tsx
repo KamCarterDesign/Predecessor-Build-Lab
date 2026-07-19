@@ -1472,50 +1472,76 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                               <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#a855f7', marginBottom: '8px' }}>
                                 Configure Minor Blessings for {(activeBuild === 'B' ? buildEternalB : buildEternal)?.display_name || (activeBuild === 'B' ? buildEternalB : buildEternal)?.name}
                               </h4>
-                              <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '12px' }}>Select up to 3 minor blessings to activate for this build.</p>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
-                                {(activeBuild === 'B' ? buildEternalB : buildEternal)?.minor_blessings?.map((bless) => {
-                                  const currentBlessings = activeBuild === 'B' ? selectedBlessingsB : selectedBlessings;
-                                  const isChecked = currentBlessings.includes(bless.name);
+                              <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '12px' }}>Select up to 2 minor blessings (one from Group A, one from Group B).</p>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                                {['A', 'B'].map((group) => {
+                                  const currentEternal = activeBuild === 'B' ? buildEternalB : buildEternal;
+                                  const blessingsInGroup = currentEternal?.minor_blessings?.filter(b => b.group === group) || [];
+                                  
+                                  if (blessingsInGroup.length === 0) return null;
+
                                   return (
-                                    <label
-                                      key={bless.name}
-                                      style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '4px',
-                                        padding: '12px',
-                                        background: isChecked ? 'rgba(168,85,247,0.05)' : 'rgba(255,255,255,0.01)',
-                                        border: '1px solid ' + (isChecked ? '#a855f7' : 'rgba(255,255,255,0.05)'),
-                                        borderRadius: '8px',
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <input
-                                          type="checkbox"
-                                          checked={isChecked}
-                                          onChange={(e) => {
-                                            const next = e.target.checked
-                                              ? [...currentBlessings, bless.name].slice(0, 3)
-                                              : currentBlessings.filter(n => n !== bless.name);
-                                            if (activeBuild === 'B') {
-                                              setSelectedBlessingsB(next);
-                                            } else {
-                                              setSelectedBlessings(next);
-                                            }
-                                          }}
-                                          style={{ cursor: 'pointer' }}
-                                        />
-                                        <strong style={{ fontSize: '0.85rem' }}>{bless.name}</strong>
+                                    <div key={group}>
+                                      <strong style={{ color: group === 'A' ? '#3b82f6' : '#a855f7', fontSize: '0.85rem', display: 'block', marginBottom: '12px' }}>
+                                        Group {group} Blessings
+                                      </strong>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {blessingsInGroup.map((bless) => {
+                                          const currentBlessings = activeBuild === 'B' ? selectedBlessingsB : selectedBlessings;
+                                          const isChecked = currentBlessings.includes(bless.name);
+                                          return (
+                                            <label
+                                              key={bless.name}
+                                              style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '4px',
+                                                padding: '12px',
+                                                background: isChecked ? 'rgba(168,85,247,0.05)' : 'rgba(255,255,255,0.01)',
+                                                border: '1px solid ' + (isChecked ? '#a855f7' : 'rgba(255,255,255,0.05)'),
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                              }}
+                                            >
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={isChecked}
+                                                  onChange={(e) => {
+                                                    let next = [...currentBlessings];
+                                                    if (e.target.checked) {
+                                                      // Remove any other blessing in the SAME group
+                                                      next = next.filter(n => {
+                                                        const b = currentEternal?.minor_blessings?.find(mb => mb.name === n);
+                                                        return !b || b.group !== group;
+                                                      });
+                                                      next.push(bless.name);
+                                                    } else {
+                                                      next = next.filter(n => n !== bless.name);
+                                                    }
+                                                    
+                                                    if (activeBuild === 'B') {
+                                                      setSelectedBlessingsB(next);
+                                                    } else {
+                                                      setSelectedBlessings(next);
+                                                    }
+                                                  }}
+                                                  style={{ cursor: 'pointer' }}
+                                                />
+                                                <strong style={{ fontSize: '0.85rem' }}>{bless.name}</strong>
+                                              </div>
+                                              <span style={{ fontSize: '0.75rem', color: '#cbd5e1', marginLeft: '22px' }}>{bless.description}</span>
+                                            </label>
+                                          );
+                                        })}
                                       </div>
-                                      <span style={{ fontSize: '0.75rem', color: '#cbd5e1', marginLeft: '22px' }}>{bless.description}</span>
-                                    </label>
+                                    </div>
                                   );
-                                }) || (
-                                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No minor blessings available.</div>
-                                )}
+                                })}
                               </div>
+                              {!(activeBuild === 'B' ? buildEternalB : buildEternal)?.minor_blessings?.length && (
+                                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No minor blessings available.</div>
+                              )}
                             </div>
                           )}
                         </div>

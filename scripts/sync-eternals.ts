@@ -98,18 +98,23 @@ async function scrapeEternalDetail(name: string, slug: string): Promise<{
   }
 
   // Extract minor blessings
-  // pred.gg likely shows them in a list or table — parse what we can
   const minorBlessings: MinorBlessing[] = []
+  const seenNames = new Set<string>()
 
-  // Look for blessing-related sections
-  $('[class*="blessing"], [class*="minor"]').each((i, el) => {
-    const text = $(el).text().trim()
-    if (text && text.length > 5) {
-      const group: 'A' | 'B' = i < 3 ? 'A' : 'B'
+  $('.min-w-0.flex-1').each((i, el) => {
+    const nameEl = $(el).find('.font-semibold').first()
+    const descEl = $(el).find('.text-surface-200').first()
+    
+    const name = nameEl.text().trim()
+    const description = descEl.text().trim()
+    
+    if (name && description && !seenNames.has(name)) {
+      seenNames.add(name)
+      const group: 'A' | 'B' = minorBlessings.length < 3 ? 'A' : 'B'
       minorBlessings.push({
         group,
-        name: `Blessing ${i + 1}`,
-        description: text,
+        name,
+        description,
       })
     }
   })
@@ -178,10 +183,7 @@ async function syncEternals() {
     const docRef = db.collection('eternals').doc(eternal.slug)
     const existing = await docRef.get()
 
-    if (existing.exists) {
-      console.log(`  ℹ Already in Firestore. Skipping (edit manually if needed).`)
-      continue
-    }
+    // Overwrite existing to ensure correct minor blessings
 
     // Get data from list page first
     const listEntry = listData.get(eternal.name.toLowerCase()) || listData.get(eternal.slug)
