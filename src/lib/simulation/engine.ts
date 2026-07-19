@@ -147,216 +147,216 @@ function getStatAtLevel(statArray: number[], level: number): number {
 
 const HERO_OUTLIERS: Record<string, { strengths: string[]; weaknesses: string[] }> = {
   adele: {
-    strengths: ['[Hero: Adele] Strong area control and shield mechanics.'],
-    weaknesses: ['[Hero: Adele] Relies on landing skillshots for survivability.']
+    strengths: ['[Hero: Adele] Tactical Shielding: Features unique shield-generation mechanics in close combat that reward landing sequential skillshots.'],
+    weaknesses: ['[Hero: Adele] Skillshot Dependency: Survivability drops significantly if she misses her primary line abilities in combat.']
   },
   akeron: {
-    strengths: ['[Hero: Akeron] Long-range physical poke and execute potential.'],
-    weaknesses: ['[Hero: Akeron] Fragile and highly vulnerable to gap-closing assassins.']
+    strengths: ['[Hero: Akeron] Maximum Poke Reach: Extremely long-range physical ability poke that excels at softening up opponents before engaging in direct fights.'],
+    weaknesses: ['[Hero: Akeron] Assassin Prey: Lacks defensive tools and is easily deleted if a gap-closing assassin engages him directly.']
   },
   argus: {
-    strengths: ['[Hero: Argus] Exceptional continuous crowd control and zone control.'],
-    weaknesses: ['[Hero: Argus] High mana consumption and low base movement speed.']
+    strengths: ['[Hero: Argus] Continuous Disruption: Possesses exceptional continuous crowd control and area-denial, letting him control choke points better than most mages.'],
+    weaknesses: ['[Hero: Argus] Heavy Mana Strain: Ability combos consume high amounts of mana, making him highly reliant on mana regen items.']
   },
   aurora: {
-    strengths: ['[Hero: Aurora] Exceptional crowd control, freezing enemies and creating terrain.'],
-    weaknesses: ['[Hero: Aurora] High ability cooldowns; vulnerable when skills are on cooldown.']
+    strengths: ['[Hero: Aurora] Unique Terrain Modification: Only hero capable of creating solid ice walls to block paths, isolate targets, and alter map geometry.'],
+    weaknesses: ['[Hero: Aurora] High Cooldown Dependency: Long ability cooldowns leave her vulnerable if forced to fight without her ice-wall or escape tools.']
   },
   bayle: {
-    strengths: ['[Hero: Bayle] High physical burst and duel pressure.'],
-    weaknesses: ['[Hero: Bayle] Limited escape tools once committed to a fight.']
+    strengths: ['[Hero: Bayle] Duel Isolation: Extremely high physical single-target burst that punishes lone targets in short skirmishes.'],
+    weaknesses: ['[Hero: Bayle] Committed Escape: Has limited escape options once committed to a duel, requiring him to fight to the death.']
   },
   boris: {
-    strengths: ['[Hero: Boris] Extreme health scaling and single-target lockdown.'],
-    weaknesses: ['[Hero: Boris] Slow attack animations and easily kited by ranged heroes.']
+    strengths: ['[Hero: Boris] Colossal Health Scaling: High base health and scaling that turns raw tank items into direct crowd control performance.'],
+    weaknesses: ['[Hero: Boris] Kiting Vulnerability: Slow basic attack animations make him easily kited by highly mobile ranged carries.']
   },
   countess: {
-    strengths: ['[Hero: Countess] Passive deals percentage damage when triggered, granting extreme burst against squishies.'],
-    weaknesses: ['[Hero: Countess] Very fragile and easily shut down by hard crowd control.']
+    strengths: ['[Hero: Countess] Percentage Execute Burst: Passive triggers massive percentage damage on targets, allowing her to delete squishy heroes instantly compared to other assassins.'],
+    weaknesses: ['[Hero: Countess] Crowd Control Victim: Extremely low health pool makes her easy to kill if interrupted by stuns/roots.']
   },
   crunch: {
-    strengths: ['[Hero: Crunch] Unmatched ability-chaining combos and sustained close-combat damage.'],
-    weaknesses: ['[Hero: Crunch] Relies heavily on continuous basic attacks; shut down by blinds or disarms.']
+    strengths: ['[Hero: Crunch] Chain-Combos: Ability animations cancel each other, allowing unmatched sustained melee DPS and knock-ups if chained correctly.'],
+    weaknesses: ['[Hero: Crunch] Blind Disruption: Heavily relies on continuous basic attacks to reduce skill cooldowns; shut down by blinds or disarms.']
   },
   dekker: {
-    strengths: ['[Hero: Dekker] Outstanding long-range stuns, speed boosts, and containment cage ultimate.'],
-    weaknesses: ['[Hero: Dekker] Very low individual damage output.']
+    strengths: ['[Hero: Dekker] Area Containment: Renders a large containment cage to trap multiple enemies, dictating teamfight positioning better than any support.'],
+    weaknesses: ['[Hero: Dekker] Minimal Solo Threat: Extremely low individual damage output, requiring follow-up from allies.']
   },
   drongo: {
-    strengths: ['[Hero: Drongo] Unique silence grenade to disrupt ability casters and shred armor.'],
-    weaknesses: ['[Hero: Drongo] Lacks dynamic movement or dash abilities.']
+    strengths: ['[Hero: Drongo] Spellcaster Silence: Features a unique silence grenade that completely disables enemy ability usage in its zone, neutralizing mages.'],
+    weaknesses: ['[Hero: Drongo] Static Positioning: Lacks any dash or movement abilities, relying entirely on positioning and self-peel.']
   },
   eden: {
-    strengths: ['[Hero: Eden] High shield generation and utility for lane sustain.'],
-    weaknesses: ['[Hero: Eden] Weak early game pressure.']
+    strengths: ['[Hero: Eden] Lane Fortification: High shield generation and healing amplification that allows her to absorb poke and sustain partners in lane.'],
+    weaknesses: ['[Hero: Eden] Low Early Pressure: Low base damage stats mean she cannot force early combat without falling behind.']
   },
   'feng-mao': {
-    strengths: ['[Hero: Feng Mao] High mobility, shielding, and reset-based execute ultimate.'],
-    weaknesses: ['[Hero: Feng Mao] Squishy for a frontliner and relies on precise execution timing.']
+    strengths: ['[Hero: Feng Mao] Reset-based Execute: High-mobility assassin whose ultimate resets its cooldown on kills, enabling rapid cleanups in teamfights.'],
+    weaknesses: ['[Hero: Feng Mao] High Skill Floor: Requires precise execute timing; failing to secure the kill leaves him without a main damage tool.']
   },
   gadget: {
-    strengths: ['[Hero: Gadget] High magical power scaling and long-range area control.'],
-    weaknesses: ['[Hero: Gadget] Squishy and lacks high mobility options.']
+    strengths: ['[Hero: Gadget] Sticky Bomb Poke: Ability to attach homing sticky bombs from long range, forcing enemies to displace or take heavy magic damage.'],
+    weaknesses: ['[Hero: Gadget] Vulnerable to Dive: Lacks instant escape tools, making her easy prey for high-mobility divers.']
   },
   gideon: {
-    strengths: ['[Hero: Gideon] High-impact AoE black hole ultimate and long-range teleport.'],
-    weaknesses: ['[Hero: Gideon] Ultimate channels in place, making him a vulnerable target during use.']
+    strengths: ['[Hero: Gideon] Black Hole Disruption: Devastating pull ultimate that locks multiple enemies in place, combined with a long-range teleport.'],
+    weaknesses: ['[Hero: Gideon] Channeled Exposure: Ultimate forces him to remain stationary in the air, making him a prime target for stuns.']
   },
   greystone: {
-    strengths: ['[Hero: Greystone] Passive health regeneration and second life ultimate offer massive survivability.'],
-    weaknesses: ['[Hero: Greystone] Lacks hard crowd control (stuns/roots) to peel for allies.']
+    strengths: ['[Hero: Greystone] Cheat-Death Resurrection: Only hero capable of returning to life with partial health via his ultimate, forcing enemies to waste high-cooldown skills twice.'],
+    weaknesses: ['[Hero: Greystone] No Hard CC: Lacks stuns, roots, or pulls, making it difficult for him to peel for squishy teammates.']
   },
   'grim-exe': {
-    strengths: ['[Hero: Grim.exe] Shield that blocks incoming abilities and long-range homing ultimate.'],
-    weaknesses: ['[Hero: Grim.exe] Very large hitbox makes him easy to hit with skillshots.']
+    strengths: ['[Hero: Grim.exe] Magic Deflection: Spell shield that absorbs any single hostile ability and converts it to mana, letting him outplay heavy-cc initiations.'],
+    weaknesses: ['[Hero: Grim.exe] Colossal Hitbox: Has the largest hitbox of any carry, making him exceptionally easy to hit with skillshots.']
   },
   grux: {
-    strengths: ['[Hero: Grux] Exceptional bleed passive, pull, and knock-up crowd control.'],
-    weaknesses: ['[Hero: Grux] Kited easily in open spaces if double dash is down.']
+    strengths: ['[Hero: Grux] Bleed Dominance: Basic attacks apply stackable bleed damage, allowing him to win almost any extended close-quarters 1v1 duel.'],
+    weaknesses: ['[Hero: Grux] Kiting Prey: Slow base movement speed makes him highly vulnerable to ranged carries once his dash is on cooldown.']
   },
   howitzer: {
-    strengths: ['[Hero: Howitzer] Excellent long-range zoning, self-peel knockbacks, and evasive ultimate.'],
-    weaknesses: ['[Hero: Howitzer] Huge hitbox for a caster hero.']
+    strengths: ['[Hero: Howitzer] Aerial Evasion: Ultimate launches him high into the air to rain missiles, doubling as a perfect escape over walls and terrain.'],
+    weaknesses: ['[Hero: Howitzer] Bulky Caster: Unusually large physical profile for a mage, making him easier to target in teamfights.']
   },
   'iggy-scorch': {
-    strengths: ['[Hero: Iggy & Scorch] Zone control and high damage over time from turrets.'],
-    weaknesses: ['[Hero: Iggy & Scorch] Immobile: Lacks escape or movement abilities, making them vulnerable to ganks.']
+    strengths: ['[Hero: Iggy & Scorch] Turret Fortification: Deploys multiple automated turrets that shred enemy waves and zone out areas, making them unrivaled in siege defense.'],
+    weaknesses: ['[Hero: Iggy & Scorch] Total Immobility: Lacks any dashes, teleports, or movement speed buffs, making him an easy gank target if caught away from turrets.']
   },
   ikra: {
-    strengths: ['[Hero: Ikra] Sustained healing and strong front-line engagement.'],
-    weaknesses: ['[Hero: Ikra] Vulnerable to anti-heal items.']
+    strengths: ['[Hero: Ikra] Blood-Sustain Engagement: Passive health recovery scales with combat duration, allowing her to stay in high-intensity brawls longer.'],
+    weaknesses: ['[Hero: Ikra] Anti-Heal Countered: Heavily countered by Tainted items, which cut her core survivability mechanism in half.']
   },
   kallari: {
-    strengths: ['[Hero: Kallari] Stealth, global presence, and high physical burst from shadows.'],
-    weaknesses: ['[Hero: Kallari] Extremely low health pool; dies quickly if detected.']
+    strengths: ['[Hero: Kallari] True Camouflage Stealth: Only hero capable of entering complete invisibility to stalk squishy targets and escape wards.'],
+    weaknesses: ['[Hero: Kallari] Fragile Skeleton: Possesses one of the lowest base health pools in the game, leading to instant death if locked down.']
   },
   khaimera: {
-    strengths: ['[Hero: Khaimera] Infinite health regen scaling from continuous hits and early duel potential.'],
-    weaknesses: ['[Hero: Khaimera] Lacks an escape tool once jumped in; weak against anti-heal.']
+    strengths: ['[Hero: Khaimera] Feral Health Regen: Basic attacks stack health regeneration per second, letting him solo major objectives like Fangtooth early in the game.'],
+    weaknesses: ['[Hero: Khaimera] Point-of-No-Return: His leap is a target-only gap closer, meaning he has no escape abilities if a fight goes poorly.']
   },
   kira: {
-    strengths: ['[Hero: Kira] High mobility dash and percentage-based true damage.'],
-    weaknesses: ['[Hero: Kira] Low basic attack range compared to other carries.']
+    strengths: ['[Hero: Kira] Percentage True Damage: Basic attacks stack marks that explode for percentage true damage, bypassing armor items.'],
+    weaknesses: ['[Hero: Kira] Short Carry Range: Lower basic attack range than other carries, forcing her to position closer to dangerous frontliners.']
   },
   kwang: {
-    strengths: ['[Hero: Kwang] High utility tether, self-shielding, and AoE magical/physical burst.'],
-    weaknesses: ['[Hero: Kwang] Committing without landing the sword tether heavily reduces impact.']
+    strengths: ['[Hero: Kwang] Sword Tether Lockdown: Can throw his sword to act as a remote anchor point, tethering multiple enemies and teleporting to them.'],
+    weaknesses: ['[Hero: Kwang] Tether Reliance: Missing his sword throw deprives him of his gap-closer, crowd control, and major damage source.']
   },
   legion: {
-    strengths: ['[Hero: Legion] Outstanding team shielding and crowd control.'],
-    weaknesses: ['[Hero: Legion] Low solo damage and relies on team follow-up.']
+    strengths: ['[Hero: Legion] Frontline Wall: Massive team shield utility and area stun capabilities that excel at protecting squishy carries.'],
+    weaknesses: ['[Hero: Legion] Solo Weakness: Low base damage growth makes him completely non-threatening when separated from his team.']
   },
   'lt-belica': {
-    strengths: ['[Hero: Lt. Belica] Mana-drain drone and ultimate that deals damage based on enemy missing mana.'],
-    weaknesses: ['[Hero: Lt. Belica] Low base mobility and vulnerable when drone is destroyed.']
+    strengths: ['[Hero: Lt. Belica] Anti-Mage Mana Drain: Deploys a drone that drains enemy mana and zaps them for casting, combined with an ultimate that executes based on missing mana.'],
+    weaknesses: ['[Hero: Lt. Belica] Static Mage: Lacks movement mechanics, leaving her highly vulnerable to assassins if her knockup stun is avoided.']
   },
   maco: {
-    strengths: ['[Hero: Maco] Unique healing area-of-effect and crowd control.'],
-    weaknesses: ['[Hero: Maco] Slow projectile speeds on primary skills.']
+    strengths: ['[Hero: Maco] Bouncing Healing: Throws projectiles that bounce between allies and enemies, simultaneously healing friendly targets and damaging hostile ones.'],
+    weaknesses: ['[Hero: Maco] Telegraphed Projectiles: Slow travel time on skills makes them highly predictable and easy to dodge at range.']
   },
   morigesh: {
-    strengths: ['[Hero: Morigesh] Target-lock doll marking and global execute ultimate.'],
-    weaknesses: ['[Hero: Morigesh] Short ability range forces close proximity to threats.']
+    strengths: ['[Hero: Morigesh] Global Execute Mark: Can select a single target to "Mark", enabling her to trigger a global execute ultimate from anywhere on the map.'],
+    weaknesses: ['[Hero: Morigesh] Danger Zone Range: Low ability range forces her to stand close to frontliners, exposing her to easy crowd control.']
   },
   mourn: {
-    strengths: ['[Hero: Mourn] High health regeneration and physical burst.'],
-    weaknesses: ['[Hero: Mourn] Easily shut down by crowd control.']
+    strengths: ['[Hero: Mourn] Bloodthirst Burst: Gathers health from bleeding targets, amplifying his physical damage when enemies are low.'],
+    weaknesses: ['[Hero: Mourn] CC Lockdown: Lacks cleanse tools and is easily focused down if interrupted during his combat setups.']
   },
   murdock: {
-    strengths: ['[Hero: Murdock] Global sniper ultimate that ignores armor and traps for zone control.'],
-    weaknesses: ['[Hero: Murdock] Lacks a dash or escape ability besides a short knockback.']
+    strengths: ['[Hero: Murdock] Global Armor-Bypassing Snipe: Ultimate shoots a laser across the entire map, passing through walls and ignoring 100% of enemy armor.'],
+    weaknesses: ['[Hero: Murdock] Self-Peel Dependent: Only has a short knock-back shield and no dash, making him heavily dependent on support shields to survive dive.']
   },
   muriel: {
-    strengths: ['[Hero: Muriel] Global shield ultimate to save allies anywhere and strong mitigation.'],
-    weaknesses: ['[Hero: Muriel] No hard crowd control to stop enemy channelings.']
+    strengths: ['[Hero: Muriel] Global Defensive Rescue: Can fly across the map to land directly on an ally, granting massive shields and knocking back attackers.'],
+    weaknesses: ['[Hero: Muriel] Lacks Interrupts: Does not possess any stuns, silences, or roots to cancel channeled enemy abilities (like Gideon ultimate).']
   },
   narbash: {
-    strengths: ['[Hero: Narbash] Exceptional area healing, speed boosts, and AoE knockup ultimate.'],
-    weaknesses: ['[Hero: Narbash] High mana consumption; ultimate can be interrupted by stuns.']
+    strengths: ['[Hero: Narbash] Mobile Healing Aura: Can toggle a continuous area heal-over-time while moving, sustaining his team through long sieges.'],
+    weaknesses: ['[Hero: Narbash] Interrupted Performance: Ultimate is a channeled crowd control song that is completely canceled if hit by a stun.']
   },
   neon: {
-    strengths: ['[Hero: Neon] High single-target lock-on ability damage.'],
-    weaknesses: ['[Hero: Neon] Squishy and lacks dynamic escape tools.']
+    strengths: ['[Hero: Neon] Lock-on Laser Poke: Highly consistent single-target ability tracking that cannot be dodged once locked onto the enemy.'],
+    weaknesses: ['[Hero: Neon] Fragile Sniper: Extremely vulnerable to flankers due to her lack of defensive stats or escape dashes.']
   },
   phase: {
-    strengths: ['[Hero: Phase] Pulls allies to safety, links for health regen share, and blinds enemies.'],
-    weaknesses: ['[Hero: Phase] Completely reliant on having a linked ally to be effective.']
+    strengths: ['[Hero: Phase] Lifeline Pull: Can pull a linked ally directly to her location, saving teammates from certain death or bad positioning.'],
+    weaknesses: ['[Hero: Phase] Co-dependent Kit: Entirely reliant on having a linked teammate; she is nearly useless when caught alone.']
   },
   rampage: {
-    strengths: ['[Hero: Rampage] Massive health regen and size increase in ultimate, and long stun rock.'],
-    weaknesses: ['[Hero: Rampage] Stun rock has a long wind-up time and is easily dodged.']
+    strengths: ['[Hero: Rampage] Enraged Bulk: Size and health regeneration skyrocket during his ultimate, making him the ultimate tower-diving tank.'],
+    weaknesses: ['[Hero: Rampage] Telegraphed Stun: Stun rock requires a long, highly visible throwing wind-up, allowing enemies to easily dodge it at range.']
   },
   renna: {
-    strengths: ['[Hero: Renna] Soul collection passive that scales ability damage late game.'],
-    weaknesses: ['[Hero: Renna] Weak early game before acquiring sufficient soul stacks.']
+    strengths: ['[Hero: Renna] Soul Harvest Scaling: Gathers souls from fallen enemies that permanently amplify her ability scaling, making her a powerhouse late game.'],
+    weaknesses: ['[Hero: Renna] Slow Build-up: Highly vulnerable early game; falls behind quickly if shut down before collecting stacks.']
   },
   revenant: {
-    strengths: ['[Hero: Revenant] High physical burst from reload basic attacks and isolation ultimate.'],
-    weaknesses: ['[Hero: Revenant] Fixed reload time slows down continuous DPS in teamfights.']
+    strengths: ['[Hero: Revenant] Nether Realm Isolation: Ultimate pulls a target into a 1v1 dimension where they cannot receive help or shields from teammates.'],
+    weaknesses: ['[Hero: Revenant] Reload Constraint: Limited to a 4-round chamber; fixed reload animation leaves him unable to deal damage for brief intervals.']
   },
   riktor: {
-    strengths: ['[Hero: Riktor] Game-changing long-range hook, silences, and AoE stun ultimate.'],
-    weaknesses: ['[Hero: Riktor] Missed hooks leave him vulnerable and waste high mana.']
+    strengths: ['[Hero: Riktor] Game-Changing Electro-Chain: Hook pulls an enemy from long range, enabling instant crowd-control chains (silence + AoE stun).'],
+    weaknesses: ['[Hero: Riktor] High-Risk Hook: Hook has a high mana cost and long cooldown; missing it deprives his team of initiation capability.']
   },
   serath: {
-    strengths: ['[Hero: Serath] High physical damage scaling, invulnerability frame, and chase capability.'],
-    weaknesses: ['[Hero: Serath] Fragile melee carry that is easily focused down.']
+    strengths: ['[Hero: Serath] Invulnerability Frame Dive: Melee carry who can dodge key enemy abilities by becoming briefly invulnerable while diving targets.'],
+    weaknesses: ['[Hero: Serath] Melee Carry Exposure: Must stand in melee range to deal carry-level damage, exposing her to instant focus fires.']
   },
   sevarog: {
-    strengths: ['[Hero: Sevarog] Infinite scaling: gaining health/power from siphon minion kills.'],
-    weaknesses: ['[Hero: Sevarog] Weak early game; heavily penalized if stacks are not farmed.']
+    strengths: ['[Hero: Sevarog] Siphon Infinite Scaling: Executes minions to gain permanent health and ability scaling, turning him into an unkillable behemoth late-game.'],
+    weaknesses: ['[Hero: Sevarog] Stack Dependency: Extremely weak early game; failing to secure minion stacks makes him ineffective compared to other tanks.']
   },
   shinbi: {
-    strengths: ['[Hero: Shinbi] Exceptional self-shielding, mobility, and long-range stack execute.'],
-    weaknesses: ['[Hero: Shinbi] Lacks any hard crowd control (stuns/roots) to peel.']
+    strengths: ['[Hero: Shinbi] Line Rhythm Dance: Can spam low-cooldown line abilities to stack damage marks on targets, triggering a massive remote execute ultimate.'],
+    weaknesses: ['[Hero: Shinbi] Lacks Peel: Does not possess any stuns, silences, or roots, making her unable to peel for allies when playing defensively.']
   },
   skylar: {
-    strengths: ['[Hero: Skylar] High aerial mobility and long-range missile barrages.'],
-    weaknesses: ['[Hero: Skylar] Vulnerable to anti-air crowd control and grounding effects.']
+    strengths: ['[Hero: Skylar] Flight Superiority: High aerial hover mobility that allows her to fire over obstacles and avoid melee threats.'],
+    weaknesses: ['[Hero: Skylar] Air-CC Vulnerability: Hits from hard crowd control while airborne cause her to crash down, leaving her grounded and stunned.']
   },
   sparrow: {
-    strengths: ['[Hero: Sparrow] Unmatched continuous basic attack scaling and attack speed buffs.'],
-    weaknesses: ['[Hero: Sparrow] Absolutely no mobility or defensive skills; highly vulnerable to ganks.']
+    strengths: ['[Hero: Sparrow] Stackable Bow Shred: Passive increases basic attack damage with each consecutive hit on the same target, giving her unmatched tank-shredding DPS.'],
+    weaknesses: ['[Hero: Sparrow] Absolute Zero Mobility: The only carry with no dashes, teleports, speed boosts, or self-peel CC, making positioning mistakes fatal.']
   },
   steel: {
-    strengths: ['[Hero: Steel] Outstanding crowd control chain and shields for team blocking.'],
-    weaknesses: ['[Hero: Steel] Low basic attack scaling and poor single-target damage output.']
+    strengths: ['[Hero: Steel] Unrivaled Base Armor Growth: Possesses higher than average armor stats and growth compared to other tanks, making him exceptionally durable even without items.'],
+    weaknesses: ['[Hero: Steel] Low Solo Threat: Poor basic attack scaling and low raw damage output make him heavily reliant on teammates to secure kills.']
   },
   terra: {
-    strengths: ['[Hero: Terra] CC-immune ultimate, stun, and shield block.'],
-    weaknesses: ['[Hero: Terra] Low mobility when ultimate is not active.']
+    strengths: ['[Hero: Terra] Unstoppable CC Immunity: Ultimate grants absolute immunity to all crowd control effects (stuns, roots, silences) for a brief duration.'],
+    weaknesses: ['[Hero: Terra] Grounded Melee: Low base mobility leaves her easily kited when her CC-immunity ultimate is not active.']
   },
   'the-fey': {
-    strengths: ['[Hero: The Fey] Extreme AoE pull ultimate, slow, and mana-refund poke.'],
-    weaknesses: ['[Hero: The Fey] Zero mobility skills makes her an easy target for dive heroes.']
+    strengths: ['[Hero: The Fey] Teamfight Pull-in: Ultimate plant pulls multiple enemies into a single center point, enabling devastating AoE combos.'],
+    weaknesses: ['[Hero: The Fey] Dive Target: Lacks any mobility or shielding abilities, making her an easy target for high-mobility divers.']
   },
   twinblast: {
-    strengths: ['[Hero: Twinblast] Double basic-attack passive, rapid dash, and high-range ultimate.'],
-    weaknesses: ['[Hero: Twinblast] Low health pool and highly reliant on items for scaling.']
+    strengths: ['[Hero: Twinblast] Double-Tap Burst: Passive fires a double shot after every ability cast, giving him superior burst damage and rapid item-effect triggers.'],
+    weaknesses: ['[Hero: Twinblast] Flat Health Deficit: Possesses a very low base health pool, making him highly susceptible to spellcaster burst.']
   },
   wraith: {
-    strengths: ['[Hero: Wraith] Invisibility, rewind-back utility, and long-range ward/snipe.'],
-    weaknesses: ['[Hero: Wraith] High skill floor; missing rewind or snipe heavily reduces utility.']
+    strengths: ['[Hero: Wraith] Temporal Rewind: Can target an enemy to rewind their position back in time by 3 seconds, negating enemy escapes and dashes.'],
+    weaknesses: ['[Hero: Wraith] High Precision Floor: Highly complex kit; missing his long-range snipe or mistiming his rewind severely penalizes his team.']
   },
   wukong: {
-    strengths: ['[Hero: Wukong] Clone-based pushing power and high double-jump mobility.'],
-    weaknesses: ['[Hero: Wukong] Lacks burst damage; relies on sustained basic attacks.']
+    strengths: ['[Hero: Wukong] Clone Split-Push: Basic attacks summon static clones that attack structures and waves, enabling unmatched split-pushing power.'],
+    weaknesses: ['[Hero: Wukong] Lacks Immediate Burst: Does not possess any high-damage burst skills, relying purely on sustained basic attacks from clones.']
   },
   yin: {
-    strengths: ['[Hero: Yin] Projectile reflection, whip-cleave range, and wind barrier.'],
-    weaknesses: ['[Hero: Yin] Highly vulnerable to melee dive when whip range is down.']
+    strengths: ['[Hero: Yin] Projectile Reflection: Can swing her whip to reflect enemy projectile abilities (including stuns) back at the attacker.'],
+    weaknesses: ['[Hero: Yin] Range Penalty: Relies on an active skill to extend her whip range; without it, she is forced to fight in close melee range.']
   },
   yurei: {
-    strengths: ['[Hero: Yurei] Shadow step mobility and high single-target burst.'],
-    weaknesses: ['[Hero: Yurei] Squishy and easily locked down by AoE crowd control.']
+    strengths: ['[Hero: Yurei] Shadow Step Ambush: Teleports behind marked targets to deal heavy physical burst damage and execute them.'],
+    weaknesses: ['[Hero: Yurei] CC Fragility: Squishy melee assassin profile; dies quickly if hit by area-of-effect crowd control.']
   },
   zarus: {
-    strengths: ['[Hero: Zarus] Cage duel ultimate that permanently gains power on kills, and stun.'],
-    weaknesses: ['[Hero: Zarus] Duel cage can trap teammates if placed poorly.']
+    strengths: ['[Hero: Zarus] Gladiator Cage Duel: Ultimate spawns a closed arena that isolates a target; securing the kill inside permanently increases his physical power.'],
+    weaknesses: ['[Hero: Zarus] Cage Obstruction: Arena walls are solid and can block or trap teammates if positioned poorly during teamfights.']
   },
   zinx: {
-    strengths: ['[Hero: Zinx] Exceptional healing and sustain capabilities in combat.'],
-    weaknesses: ['[Hero: Zinx] Vulnerable to anti-heal effects (Tainted items).']
+    strengths: ['[Hero: Zinx] Overwhelming Health Sustain: Possesses unmatched passive health regeneration and active combat healing, out-sustaining any other hero in long duels.'],
+    weaknesses: ['[Hero: Zinx] Anti-Heal counter: Vulnerable to Tainted items, which cut her survivability by 40%.']
   }
 }
 
@@ -367,98 +367,82 @@ function deriveItemOutliers(item: ItemDoc): { strengths: string[]; weaknesses: s
     return staticOut;
   }
 
-  // Dynamic derivation based on stats
   const strengths: string[] = [];
   const weaknesses: string[] = [];
 
   const name = item.display_name || item.name || 'Item';
   const stats = item.stats || {};
+  const price = item.total_price || item.price || 0;
 
-  // Strengths
-  if ((stats.magical_power || 0) >= 70 || (stats.energy_power || 0) >= 70) {
-    strengths.push(`[Item: ${name}] High Magical Power — Significantly amplifies ability and spell damage.`);
-  } else if ((stats.magical_power || 0) > 0 || (stats.energy_power || 0) > 0) {
-    strengths.push(`[Item: ${name}] Magical Utility — Provides energy power to boost ability scaling.`);
+  const hasPhysPower = (stats.physical_power || 0) > 0;
+  const hasMagPower = (stats.magical_power || stats.energy_power || 0) > 0;
+  const hasCrit = (stats.critical_chance || 0) > 0;
+  const hasAttackSpeed = (stats.attack_speed || 0) > 0;
+  const hasHaste = (stats.ability_haste || 0) > 0;
+  const hasHealth = (stats.max_health || 0) > 0;
+  const hasPhysArmor = (stats.physical_armor || 0) > 0;
+  const hasMagArmor = (stats.magical_armor || 0) > 0;
+  const hasPen = (stats.physical_penetration || stats.magical_penetration || stats.physical_armor_pen || stats.magical_armor_pen || 0) > 0;
+  const hasVamp = (stats.lifesteal || stats.magical_lifesteal || stats.omnivamp || 0) > 0;
+
+  // ─── Strengths (comparative, non-generic)
+  if (hasPhysPower && stats.physical_power >= 50) {
+    strengths.push(`[Item: ${name}] Heavy Hitter: Ranks among the highest raw physical power items, drastically increasing basic attack scaling.`);
+  }
+  if (hasMagPower && (stats.magical_power >= 90 || stats.energy_power >= 90)) {
+    strengths.push(`[Item: ${name}] Apex Magic Scaling: Offers massive magical power to turn high-ratio abilities into devastating nukes.`);
+  }
+  if (hasCrit && hasAttackSpeed) {
+    strengths.push(`[Item: ${name}] Carry Engine: Combines critical strike chance and attack speed, essential for rapid physical DPS scaling.`);
+  }
+  if (hasHealth && stats.max_health >= 350) {
+    strengths.push(`[Item: ${name}] Colossal Bulk: Grants a massive raw health pool, making you exceptionally resilient against burst execution.`);
+  }
+  if (hasPhysArmor && stats.physical_armor >= 45) {
+    strengths.push(`[Item: ${name}] Steel Wall: Provides top-tier physical armor, severely cutting incoming damage from physical carries.`);
+  }
+  if (hasMagArmor && stats.magical_armor >= 45) {
+    strengths.push(`[Item: ${name}] Void Ward: Offers premium magical protection, shielding you against high-burst magic casters.`);
+  }
+  if (hasHaste && stats.ability_haste >= 20) {
+    strengths.push(`[Item: ${name}] Spell Spammer: Delivers massive cooldown reduction, allowing you to recycle combat abilities continuously.`);
+  }
+  if (hasPen) {
+    strengths.push(`[Item: ${name}] Armor Shredder: Integrates armor penetration, bypassing enemy defensive itemization to maintain damage relevancy.`);
+  }
+  if (hasVamp) {
+    strengths.push(`[Item: ${name}] Combat Regeneration: Grants lifesteal/omnivamp, allowing you to sustain through prolonged skirmishes.`);
   }
 
-  if ((stats.physical_power || 0) >= 45) {
-    strengths.push(`[Item: ${name}] High Physical Power — Greatly boosts basic attacks and physical scaling skills.`);
-  } else if ((stats.physical_power || 0) > 0) {
-    strengths.push(`[Item: ${name}] Physical Power — Increases raw basic attack and scaling physical damage.`);
-  }
-
-  if ((stats.critical_chance || 0) > 0) {
-    strengths.push(`[Item: ${name}] Critical Chance — Enhances physical basic attacks with critical hit scaling.`);
-  }
-
-  if ((stats.attack_speed || 0) >= 25) {
-    strengths.push(`[Item: ${name}] Rapid Attack Speed — Allows fast basic attack combos to shred targets.`);
-  } else if ((stats.attack_speed || 0) > 0) {
-    strengths.push(`[Item: ${name}] Attack Speed — Increases attack frequency for better sustained DPS.`);
-  }
-
-  if ((stats.physical_penetration || 0) > 0 || (stats.physical_armor_pen || 0) > 0) {
-    strengths.push(`[Item: ${name}] Physical Penetration — Cuts through enemy physical armor/defense.`);
-  }
-
-  if ((stats.magical_penetration || 0) > 0 || (stats.magical_armor_pen || 0) > 0) {
-    strengths.push(`[Item: ${name}] Magical Penetration — Shreds enemy magic defense for ability casters.`);
-  }
-
-  if ((stats.max_health || 0) >= 300) {
-    strengths.push(`[Item: ${name}] High Health Pool — Provides a massive health boost to survive burst damage.`);
-  } else if ((stats.max_health || 0) > 0) {
-    strengths.push(`[Item: ${name}] Health Addition — Enhances general durability.`);
-  }
-
-  if ((stats.physical_armor || 0) >= 40) {
-    strengths.push(`[Item: ${name}] Heavy Physical Defense — Greatly reduces incoming damage from carries and assassins.`);
-  } else if ((stats.physical_armor || 0) > 0) {
-    strengths.push(`[Item: ${name}] Physical Armor — Adds protection against physical damage sources.`);
-  }
-
-  if ((stats.magical_armor || 0) >= 40) {
-    strengths.push(`[Item: ${name}] Heavy Magical Defense — Shields against heavy burst magic damage from mages.`);
-  } else if ((stats.magical_armor || 0) > 0) {
-    strengths.push(`[Item: ${name}] Magical Armor — Protects against magical damage threats.`);
-  }
-
-  if ((stats.ability_haste || 0) >= 15) {
-    strengths.push(`[Item: ${name}] High Haste — Allows skills and ultimates to be cast much more frequently.`);
-  } else if ((stats.ability_haste || 0) > 0) {
-    strengths.push(`[Item: ${name}] Ability Haste — Mutes cooldown times for active skills.`);
-  }
-
-  if ((stats.lifesteal || 0) > 0 || (stats.magical_lifesteal || 0) > 0 || (stats.omnivamp || 0) > 0) {
-    strengths.push(`[Item: ${name}] Life Sustain — Recovers health during combat engagements through attacks/skills.`);
-  }
-
-  // Fallback strength if none added
+  // Fallback strength if none matched
   if (strengths.length === 0) {
-    strengths.push(`[Item: ${name}] Balanced Utility — Offers well-rounded combat effectiveness.`);
+    strengths.push(`[Item: ${name}] Strategic Utility: Offers balanced hybrid stats to complete specific setups.`);
   }
 
-  // Weaknesses
-  const hasOffensive = (stats.physical_power || 0) > 0 || (stats.magical_power || 0) > 0 || (stats.energy_power || 0) > 0 || (stats.critical_chance || 0) > 0 || (stats.attack_speed || 0) > 0;
-  const hasDefensive = (stats.max_health || 0) > 0 || (stats.physical_armor || 0) > 0 || (stats.magical_armor || 0) > 0;
-
-  if (hasOffensive && !hasDefensive) {
-    weaknesses.push(`[Item: ${name}] Glass Cannon — Offers zero defensive stats, leaving the builder fragile.`);
-  } else if (hasDefensive && !hasOffensive) {
-    weaknesses.push(`[Item: ${name}] Low Threat — Lacks any direct offensive power scaling stats.`);
+  // ─── Weaknesses (focused on build-order, trade-offs, and agency)
+  if (hasAttackSpeed && !hasPhysPower && !hasMagPower) {
+    weaknesses.push(`[Item: ${name}] Underpowered Rush: Lacks raw physical or magical power, making it a poor choice for your first item slot.`);
+  }
+  
+  if ((hasPhysPower || hasMagPower) && !hasHealth && !hasPhysArmor && !hasMagArmor) {
+    weaknesses.push(`[Item: ${name}] Glass Cannon Trade-off: Offers zero durability stats, making you highly susceptible to being focused down.`);
   }
 
-  if (!(stats.ability_haste || 0)) {
-    weaknesses.push(`[Item: ${name}] No Ability Haste — Does not contribute to reducing cooldown times.`);
+  if (hasHealth && !hasPhysPower && !hasMagPower) {
+    weaknesses.push(`[Item: ${name}] Passive Sentinel: Sacrifices all scaling offensive threat to prioritize pure defensive survivability.`);
   }
 
-  if (item.total_price && item.total_price >= 3100) {
-    weaknesses.push(`[Item: ${name}] High Gold Cost — Represents a large economy investment.`);
+  if (price >= 3100) {
+    weaknesses.push(`[Item: ${name}] Premium Economy: High gold completion cost makes it a slow power spike if you fall behind.`);
   }
 
-  // Fallback weakness if none added
+  if (hasCrit && !hasPhysPower) {
+    weaknesses.push(`[Item: ${name}] Critical Dependency: Relies entirely on other physical power items in your build to make the critical hits deal impact.`);
+  }
+
+  // Fallback weakness if none matched
   if (weaknesses.length === 0) {
-    weaknesses.push(`[Item: ${name}] Specialized Stats — Less versatile outside its core intended archetype.`);
+    weaknesses.push(`[Item: ${name}] Specialized Stats: Highly specialized for specific character builds and loses value in generic setups.`);
   }
 
   return { strengths, weaknesses };
@@ -466,16 +450,16 @@ function deriveItemOutliers(item: ItemDoc): { strengths: string[]; weaknesses: s
 
 const ITEM_OUTLIERS: Record<string, { strengths: string[]; weaknesses: string[] }> = {
   overlord: {
-    strengths: ['[Item: Overlord] Infinite scaling: grants bonus health per unit killed.'],
-    weaknesses: ['[Item: Overlord] Low initial stat value before farming stacks.']
+    strengths: ['[Item: Overlord] Giant Health Multiplier: Gaining permanent bonus health from minion executions enables heavy tank scaling compared to standard flat items.'],
+    weaknesses: ['[Item: Overlord] Delayed Scaling: Low initial base health requires extensive farming before item viability is realized.']
   },
   'tainted-blade': {
-    strengths: ['[Item: Tainted Blade] Anti-Heal: reduces enemy healing/regeneration by 40%.'],
-    weaknesses: ['[Item: Tainted Blade] Sub-optimal raw physical power compared to other damage items.']
+    strengths: ['[Item: Tainted Blade] Healing Suppression: Specifically designed to counter regeneration/healing heroes (like Zinx/Khaimera), cutting their healing by 40%.'],
+    weaknesses: ['[Item: Tainted Blade] Low Damage Floor: Sub-optimal base physical power value compared to other physical penetration items.']
   },
   'tainted-scepter': {
-    strengths: ['[Item: Tainted Scepter] Anti-Heal: reduces enemy healing/regeneration by 40%.'],
-    weaknesses: ['[Item: Tainted Scepter] Lower raw magical power compared to pure damage items.']
+    strengths: ['[Item: Tainted Scepter] Anti-Heal Spellcaster: Inflicts healing reduction on ability damage, effectively shutting down regeneration setups during teamfights.'],
+    weaknesses: ['[Item: Tainted Scepter] Lower Magic Burst: Sacrifices pure magic damage scaling compared to other high magical power items.']
   }
 }
 
