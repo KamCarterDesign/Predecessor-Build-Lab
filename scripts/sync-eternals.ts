@@ -83,18 +83,20 @@ async function scrapeEternalDetail(name: string, slug: string): Promise<{
     description = descEl.text().trim()
   }
 
-  // Extract image URL from og:image or first eternal card image
+  // Try to extract image from img tags with eternal-related classes first (actual Eternal portrait)
   let imageUrl = ''
-  const ogImage = $('meta[property="og:image"]').attr('content')
-  if (ogImage) {
-    imageUrl = ogImage.startsWith('http') ? ogImage : `${PRED_GG_BASE}${ogImage}`
+  const img = $('img[class*="eternal"], img[class*="detail"]').first()
+  const src = img.attr('src')
+  if (src) {
+    imageUrl = src.startsWith('http') ? src : `${PRED_GG_BASE}${src}`
   }
 
-  // Try to extract image from img tags with eternal-related classes
+  // Fallback to og:image if no specific eternal image was found
   if (!imageUrl) {
-    const img = $('img[class*="eternal"]').first()
-    const src = img.attr('src')
-    if (src) imageUrl = src.startsWith('http') ? src : `${PRED_GG_BASE}${src}`
+    const ogImage = $('meta[property="og:image"]').attr('content')
+    if (ogImage) {
+      imageUrl = ogImage.startsWith('http') ? ogImage : `${PRED_GG_BASE}${ogImage}`
+    }
   }
 
   // Extract minor blessings
