@@ -360,6 +360,110 @@ const HERO_OUTLIERS: Record<string, { strengths: string[]; weaknesses: string[] 
   }
 }
 
+function deriveItemOutliers(item: ItemDoc): { strengths: string[]; weaknesses: string[] } {
+  // Check static list first
+  const staticOut = ITEM_OUTLIERS[item.slug];
+  if (staticOut) {
+    return staticOut;
+  }
+
+  // Dynamic derivation based on stats
+  const strengths: string[] = [];
+  const weaknesses: string[] = [];
+
+  const name = item.display_name || item.name || 'Item';
+  const stats = item.stats || {};
+
+  // Strengths
+  if ((stats.magical_power || 0) >= 70 || (stats.energy_power || 0) >= 70) {
+    strengths.push(`[Item: ${name}] High Magical Power — Significantly amplifies ability and spell damage.`);
+  } else if ((stats.magical_power || 0) > 0 || (stats.energy_power || 0) > 0) {
+    strengths.push(`[Item: ${name}] Magical Utility — Provides energy power to boost ability scaling.`);
+  }
+
+  if ((stats.physical_power || 0) >= 45) {
+    strengths.push(`[Item: ${name}] High Physical Power — Greatly boosts basic attacks and physical scaling skills.`);
+  } else if ((stats.physical_power || 0) > 0) {
+    strengths.push(`[Item: ${name}] Physical Power — Increases raw basic attack and scaling physical damage.`);
+  }
+
+  if ((stats.critical_chance || 0) > 0) {
+    strengths.push(`[Item: ${name}] Critical Chance — Enhances physical basic attacks with critical hit scaling.`);
+  }
+
+  if ((stats.attack_speed || 0) >= 25) {
+    strengths.push(`[Item: ${name}] Rapid Attack Speed — Allows fast basic attack combos to shred targets.`);
+  } else if ((stats.attack_speed || 0) > 0) {
+    strengths.push(`[Item: ${name}] Attack Speed — Increases attack frequency for better sustained DPS.`);
+  }
+
+  if ((stats.physical_penetration || 0) > 0 || (stats.physical_armor_pen || 0) > 0) {
+    strengths.push(`[Item: ${name}] Physical Penetration — Cuts through enemy physical armor/defense.`);
+  }
+
+  if ((stats.magical_penetration || 0) > 0 || (stats.magical_armor_pen || 0) > 0) {
+    strengths.push(`[Item: ${name}] Magical Penetration — Shreds enemy magic defense for ability casters.`);
+  }
+
+  if ((stats.max_health || 0) >= 300) {
+    strengths.push(`[Item: ${name}] High Health Pool — Provides a massive health boost to survive burst damage.`);
+  } else if ((stats.max_health || 0) > 0) {
+    strengths.push(`[Item: ${name}] Health Addition — Enhances general durability.`);
+  }
+
+  if ((stats.physical_armor || 0) >= 40) {
+    strengths.push(`[Item: ${name}] Heavy Physical Defense — Greatly reduces incoming damage from carries and assassins.`);
+  } else if ((stats.physical_armor || 0) > 0) {
+    strengths.push(`[Item: ${name}] Physical Armor — Adds protection against physical damage sources.`);
+  }
+
+  if ((stats.magical_armor || 0) >= 40) {
+    strengths.push(`[Item: ${name}] Heavy Magical Defense — Shields against heavy burst magic damage from mages.`);
+  } else if ((stats.magical_armor || 0) > 0) {
+    strengths.push(`[Item: ${name}] Magical Armor — Protects against magical damage threats.`);
+  }
+
+  if ((stats.ability_haste || 0) >= 15) {
+    strengths.push(`[Item: ${name}] High Haste — Allows skills and ultimates to be cast much more frequently.`);
+  } else if ((stats.ability_haste || 0) > 0) {
+    strengths.push(`[Item: ${name}] Ability Haste — Mutes cooldown times for active skills.`);
+  }
+
+  if ((stats.lifesteal || 0) > 0 || (stats.magical_lifesteal || 0) > 0 || (stats.omnivamp || 0) > 0) {
+    strengths.push(`[Item: ${name}] Life Sustain — Recovers health during combat engagements through attacks/skills.`);
+  }
+
+  // Fallback strength if none added
+  if (strengths.length === 0) {
+    strengths.push(`[Item: ${name}] Balanced Utility — Offers well-rounded combat effectiveness.`);
+  }
+
+  // Weaknesses
+  const hasOffensive = (stats.physical_power || 0) > 0 || (stats.magical_power || 0) > 0 || (stats.energy_power || 0) > 0 || (stats.critical_chance || 0) > 0 || (stats.attack_speed || 0) > 0;
+  const hasDefensive = (stats.max_health || 0) > 0 || (stats.physical_armor || 0) > 0 || (stats.magical_armor || 0) > 0;
+
+  if (hasOffensive && !hasDefensive) {
+    weaknesses.push(`[Item: ${name}] Glass Cannon — Offers zero defensive stats, leaving the builder fragile.`);
+  } else if (hasDefensive && !hasOffensive) {
+    weaknesses.push(`[Item: ${name}] Low Threat — Lacks any direct offensive power scaling stats.`);
+  }
+
+  if (!(stats.ability_haste || 0)) {
+    weaknesses.push(`[Item: ${name}] No Ability Haste — Does not contribute to reducing cooldown times.`);
+  }
+
+  if (item.total_price && item.total_price >= 3100) {
+    weaknesses.push(`[Item: ${name}] High Gold Cost — Represents a large economy investment.`);
+  }
+
+  // Fallback weakness if none added
+  if (weaknesses.length === 0) {
+    weaknesses.push(`[Item: ${name}] Specialized Stats — Less versatile outside its core intended archetype.`);
+  }
+
+  return { strengths, weaknesses };
+}
+
 const ITEM_OUTLIERS: Record<string, { strengths: string[]; weaknesses: string[] }> = {
   overlord: {
     strengths: ['[Item: Overlord] Infinite scaling: grants bonus health per unit killed.'],
@@ -678,12 +782,15 @@ export function calculateBuildStats(
     weaknesses.push(...heroOut.weaknesses);
   }
 
-  // Add predefined Item outliers
+  // Add predefined/derived Item outliers for Tier 3 items and Legendary Crests
   for (const item of allEquippedItems) {
-    const itemOut = ITEM_OUTLIERS[item.slug];
-    if (itemOut) {
-      strengths.push(...itemOut.strengths);
-      weaknesses.push(...itemOut.weaknesses);
+    const isFinalItem = item.tier === 3 || item.is_final_item || item.is_final_crest || item.slot_type === 'Crest';
+    if (isFinalItem) {
+      const itemOut = deriveItemOutliers(item);
+      if (itemOut) {
+        strengths.push(...itemOut.strengths);
+        weaknesses.push(...itemOut.weaknesses);
+      }
     }
   }
 
