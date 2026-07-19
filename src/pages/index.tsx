@@ -121,6 +121,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   const [itemTierFilter, setItemTierFilter] = useState<number>(3) // Default: Tier 3 (final)
   const [itemClassFilter, setItemClassFilter] = useState<string>('All')
   const [browserTab, setBrowserTab] = useState<'items' | 'crests' | 'eternals'>('items')
+  const [visibleItemsCount, setVisibleItemsCount] = useState(16)
+  const [visibleCrestsCount, setVisibleCrestsCount] = useState(16)
+  const [visibleEternalsCount, setVisibleEternalsCount] = useState(16)
   const [activeStatFilters, setActiveStatFilters] = useState<string[]>([])
   const [selectedBlessings, setSelectedBlessings] = useState<string[]>([])
   const [selectedBlessingsB, setSelectedBlessingsB] = useState<string[]>([])
@@ -280,6 +283,12 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
       return matchesSearch && matchesClass && matchesRole
     })
   }, [heroes, heroSearch, selectedClass, selectedRole])
+
+  useEffect(() => {
+    setVisibleItemsCount(16)
+    setVisibleCrestsCount(16)
+    setVisibleEternalsCount(16)
+  }, [browserTab, itemSearch, itemClassFilter, itemTierFilter, activeStatFilters])
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
@@ -1119,7 +1128,27 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                     </div>
                   </div>
 
-                   {/* REAL-TIME STATS PANEL */}
+                  {/* ABILITIES SECTION */}
+                  <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px' }}>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: '0 0 12px 0' }}>Hero Abilities</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                      {selectedHero.abilities.map((ability) => (
+                        <div
+                          key={ability.key}
+                          onClick={() => setSelectedAbility(ability)}
+                          style={{ cursor: 'pointer', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.08)', position: 'relative' }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={ability.image_url} alt={ability.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <div style={{ position: 'absolute', top: 2, right: 2, background: 'black', borderRadius: '3px', padding: '1px 3px', fontSize: '10px', fontWeight: 'bold' }}>
+                            {ability.key}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* REAL-TIME STATS PANEL */}
                   {analysisResult && (
                     <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px' }}>
                       <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: '0 0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
@@ -1201,26 +1230,6 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                       </div>
                     </div>
                   )}
-
-                  {/* ABILITIES SECTION */}
-                  <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px' }}>
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: '0 0 12px 0' }}>Hero Abilities</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                      {selectedHero.abilities.map((ability) => (
-                        <div
-                          key={ability.key}
-                          onClick={() => setSelectedAbility(ability)}
-                          style={{ cursor: 'pointer', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.08)', position: 'relative' }}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={ability.image_url} alt={ability.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <div style={{ position: 'absolute', top: 2, right: 2, background: 'black', borderRadius: '3px', padding: '1px 3px', fontSize: '10px', fontWeight: 'bold' }}>
-                            {ability.key}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 {/* RIGHT COLUMN: WORKSPACE */}
@@ -1229,21 +1238,21 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                   {/* BUILD PATH WARNINGS REMOVED */}
 
                   {/* BUILD CONSTRUCTION SLOTS */}
-                  <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Build Loadout</h3>
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: 0 }}>Build Loadout</h3>
                         {selectedHeroB && (
                           <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
                             <button
                               onClick={() => setActiveBuild('A')}
-                              style={{ padding: '4px 8px', border: 'none', cursor: 'pointer', background: activeBuild === 'A' ? '#3b82f6' : '#090d16', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
+                              style={{ padding: '3px 6px', border: 'none', cursor: 'pointer', background: activeBuild === 'A' ? '#3b82f6' : '#090d16', color: 'white', fontSize: '0.7rem', fontWeight: 'bold' }}
                             >
                               Build A
                             </button>
                             <button
                               onClick={() => setActiveBuild('B')}
-                              style={{ padding: '4px 8px', border: 'none', cursor: 'pointer', background: activeBuild === 'B' ? '#a855f7' : '#090d16', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
+                              style={{ padding: '3px 6px', border: 'none', cursor: 'pointer', background: activeBuild === 'B' ? '#a855f7' : '#090d16', color: 'white', fontSize: '0.7rem', fontWeight: 'bold' }}
                             >
                               Build B
                             </button>
@@ -1252,8 +1261,8 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                       </div>
                       
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-                          Gold Cost: <strong style={{ color: '#eab308' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                          Gold: <strong style={{ color: '#eab308' }}>
                             {activeBuild === 'A'
                               ? buildItems.reduce((sum, item) => sum + item.total_price, 0) + (buildCrest ? buildCrest.total_price : 0)
                               : buildItemsB.reduce((sum, item) => sum + item.total_price, 0) + (buildCrestB ? buildCrestB.total_price : 0)
@@ -1266,7 +1275,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                             : (buildItemsB.length === 0 && !buildCrestB && !buildEternalB)
                           }
                           onClick={() => setIsSaveModalOpen(true)}
-                          style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', background: '#10b981', color: 'white', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                          style={{ padding: '4px 10px', border: 'none', borderRadius: '6px', background: '#10b981', color: 'white', fontWeight: 'bold', fontSize: '0.8rem', cursor: 'pointer' }}
                         >
                           💾 Save {activeBuild}
                         </button>
@@ -1275,10 +1284,10 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
 
                     {/* Active loadout slots rendering */}
                     {activeBuild === 'A' ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 64px))', gap: '8px', justifyContent: 'center' }}>
                         {/* Crest Slot */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Crest</span>
+                          <span style={{ fontSize: '9px', color: '#94a3b8' }}>Crest</span>
                           <div
                             onClick={() => setBuildCrest(null)}
                             onMouseEnter={() => buildCrest && setHoveredItem(buildCrest)}
@@ -1289,7 +1298,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={buildCrest.image_url} alt={buildCrest.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                              <span style={{ fontSize: '1.2rem', color: '#3b82f6' }}>+</span>
+                              <span style={{ fontSize: '1rem', color: '#3b82f6' }}>+</span>
                             )}
                           </div>
                         </div>
@@ -1299,7 +1308,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           const item = buildItems[i]
                           return (
                             <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Slot {i + 1}</span>
+                              <span style={{ fontSize: '9px', color: '#94a3b8' }}>Slot {i + 1}</span>
                               <div
                                 onClick={() => item && removeBuildItem(i)}
                                 onMouseEnter={() => item && setHoveredItem(item)}
@@ -1310,7 +1319,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img src={item.image_url} alt={item.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                  <span style={{ fontSize: '1.2rem', color: '#475569' }}>-</span>
+                                  <span style={{ fontSize: '1rem', color: '#475569' }}>-</span>
                                 )}
                               </div>
                             </div>
@@ -1319,7 +1328,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
 
                         {/* Eternal Slot */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Your Eternal</span>
+                          <span style={{ fontSize: '9px', color: '#94a3b8' }}>Eternal</span>
                           <div
                             onClick={() => setBuildEternal(null)}
                             style={{ width: '100%', aspectRatio: '1/1', border: '2px dashed rgba(168,85,247,0.3)', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(168,85,247,0.02)' }}
@@ -1328,16 +1337,16 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={buildEternal.image_url} alt={buildEternal.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                              <span style={{ fontSize: '1.2rem', color: '#a855f7' }}>+</span>
+                              <span style={{ fontSize: '1rem', color: '#a855f7' }}>+</span>
                             )}
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 64px))', gap: '8px', justifyContent: 'center' }}>
                         {/* Crest B Slot */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Enemy Crest</span>
+                          <span style={{ fontSize: '9px', color: '#94a3b8' }}>Crest</span>
                           <div
                             onClick={() => setBuildCrestB(null)}
                             onMouseEnter={() => buildCrestB && setHoveredItem(buildCrestB)}
@@ -1348,7 +1357,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={buildCrestB.image_url} alt={buildCrestB.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                              <span style={{ fontSize: '1.2rem', color: '#a855f7' }}>+</span>
+                              <span style={{ fontSize: '1rem', color: '#a855f7' }}>+</span>
                             )}
                           </div>
                         </div>
@@ -1358,7 +1367,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           const item = buildItemsB[i]
                           return (
                             <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Enemy Slot {i + 1}</span>
+                              <span style={{ fontSize: '9px', color: '#94a3b8' }}>Slot {i + 1}</span>
                               <div
                                 onClick={() => item && removeBuildItemB(i)}
                                 onMouseEnter={() => item && setHoveredItem(item)}
@@ -1369,7 +1378,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img src={item.image_url} alt={item.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                  <span style={{ fontSize: '1.2rem', color: '#475569' }}>-</span>
+                                  <span style={{ fontSize: '1rem', color: '#475569' }}>-</span>
                                 )}
                               </div>
                             </div>
@@ -1378,7 +1387,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
 
                         {/* Eternal B Slot */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Enemy Eternal</span>
+                          <span style={{ fontSize: '9px', color: '#94a3b8' }}>Eternal</span>
                           <div
                             onClick={() => setBuildEternalB(null)}
                             style={{ width: '100%', aspectRatio: '1/1', border: '2px dashed rgba(168,85,247,0.3)', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(168,85,247,0.02)' }}
@@ -1387,7 +1396,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={buildEternalB.image_url} alt={buildEternalB.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                              <span style={{ fontSize: '1.2rem', color: '#a855f7' }}>+</span>
+                              <span style={{ fontSize: '1rem', color: '#a855f7' }}>+</span>
                             )}
                           </div>
                         </div>
@@ -1516,166 +1525,202 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                     {/* ITEMS LIST (Displayed in full, no max-height or scroll constraints) */}
                     <div>
                       {browserTab === 'items' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                          {filteredItems.filter(i => i.slot_type !== 'Crest').map((item) => (
-                            <div
-                              key={item.slug}
-                              onClick={() => addBuildItem(item)}
-                              onMouseEnter={() => setHoveredItem(item)}
-                              onMouseLeave={() => setHoveredItem(null)}
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '12px',
-                                padding: '16px',
-                                background: 'rgba(255,255,255,0.02)',
-                                border: '1px solid rgba(255,255,255,0.05)',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                              }}
-                            >
-                              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={item.image_url} alt={item.display_name} style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }} />
-                                <div>
-                                  <div style={{ fontSize: '0.95rem', fontWeight: 'bold' }}>{item.display_name}</div>
-                                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{item.total_price}g • {item.aggression_type || 'Neutral'}</div>
+                        <div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                            {filteredItems.filter(i => i.slot_type !== 'Crest').slice(0, visibleItemsCount).map((item) => (
+                              <div
+                                key={item.slug}
+                                onClick={() => addBuildItem(item)}
+                                onMouseEnter={() => setHoveredItem(item)}
+                                onMouseLeave={() => setHoveredItem(null)}
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '12px',
+                                  padding: '16px',
+                                  background: 'rgba(255,255,255,0.02)',
+                                  border: '1px solid rgba(255,255,255,0.05)',
+                                  borderRadius: '12px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                }}
+                              >
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={item.image_url} alt={item.display_name} style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }} />
+                                  <div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold' }}>{item.display_name}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{item.total_price}g • {item.aggression_type || 'Neutral'}</div>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
+                                  {Object.entries(item.stats || {}).map(([statKey, val]) => {
+                                    if (!val) return null;
+                                    const statLabel = statKey.replace('_', ' ');
+                                    let iconId = 'BonusDamage';
+                                    if (statKey.includes('health')) iconId = 'HealthIconGreen';
+                                    else if (statKey.includes('mana')) iconId = 'ManaBlue';
+                                    else if (statKey.includes('physical_power')) iconId = 'ADIconOrange';
+                                    else if (statKey.includes('magical_power') || statKey.includes('energy_power')) iconId = 'APIconBlue';
+                                    else if (statKey.includes('physical_armor')) iconId = 'ArmorOrange';
+                                    else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
+                                    else if (statKey.includes('haste')) iconId = 'AbilityHaste';
+                                    else if (statKey.includes('crit')) iconId = 'CritIconGold';
+                                    else if (statKey.includes('magical_lifesteal')) iconId = 'MagicalLifesteal';
+                                    else if (statKey.includes('lifesteal')) iconId = 'Lifesteal';
+                                    else if (statKey.includes('omnivamp')) iconId = 'Omnivamp';
+                                    return (
+                                      <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
+                                        <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
+                                        {val} {statLabel}
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                               </div>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
-                                {Object.entries(item.stats || {}).map(([statKey, val]) => {
-                                  if (!val) return null;
-                                  const statLabel = statKey.replace('_', ' ');
-                                  let iconId = 'BonusDamage';
-                                  if (statKey.includes('health')) iconId = 'HealthIconGreen';
-                                  else if (statKey.includes('mana')) iconId = 'ManaBlue';
-                                  else if (statKey.includes('physical_power')) iconId = 'ADIconOrange';
-                                  else if (statKey.includes('magical_power') || statKey.includes('energy_power')) iconId = 'APIconBlue';
-                                  else if (statKey.includes('physical_armor')) iconId = 'ArmorOrange';
-                                  else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
-                                  else if (statKey.includes('haste')) iconId = 'AbilityHaste';
-                                  else if (statKey.includes('crit')) iconId = 'CritIconGold';
-                                  else if (statKey.includes('magical_lifesteal')) iconId = 'MagicalLifesteal';
-                                  else if (statKey.includes('lifesteal')) iconId = 'Lifesteal';
-                                  else if (statKey.includes('omnivamp')) iconId = 'Omnivamp';
-                                  return (
-                                    <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
-                                      <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
-                                      {val} {statLabel}
-                                    </span>
-                                  );
-                                })}
-                              </div>
+                            ))}
+                          </div>
+                          {filteredItems.filter(i => i.slot_type !== 'Crest').length > visibleItemsCount && (
+                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+                              <button
+                                onClick={() => setVisibleItemsCount(prev => prev + 16)}
+                                style={{ padding: '8px 24px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'background 0.2s' }}
+                              >
+                                Load More Items
+                              </button>
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
 
                       {browserTab === 'crests' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                          {filteredCrests.map((crestItem) => (
-                            <div
-                              key={crestItem.slug}
-                              onClick={() => {
-                                if (activeBuild === 'B') {
-                                  setBuildCrestB(crestItem)
-                                } else {
-                                  setBuildCrest(crestItem)
-                                }
-                              }}
-                              onMouseEnter={() => setHoveredItem(crestItem)}
-                              onMouseLeave={() => setHoveredItem(null)}
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '12px',
-                                padding: '16px',
-                                background: 'rgba(59,130,246,0.04)',
-                                border: '1px solid rgba(59,130,246,0.15)',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                              }}
-                            >
-                              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={crestItem.image_url} alt={crestItem.display_name} style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }} />
-                                <div>
-                                  <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#60a5fa' }}>{crestItem.display_name}</div>
-                                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{crestItem.total_price}g • Crest</div>
+                        <div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                            {filteredCrests.slice(0, visibleCrestsCount).map((crestItem) => (
+                              <div
+                                key={crestItem.slug}
+                                onClick={() => {
+                                  if (activeBuild === 'B') {
+                                    setBuildCrestB(crestItem)
+                                  } else {
+                                    setBuildCrest(crestItem)
+                                  }
+                                }}
+                                onMouseEnter={() => setHoveredItem(crestItem)}
+                                onMouseLeave={() => setHoveredItem(null)}
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '12px',
+                                  padding: '16px',
+                                  background: 'rgba(59,130,246,0.04)',
+                                  border: '1px solid rgba(59,130,246,0.15)',
+                                  borderRadius: '12px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                }}
+                              >
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={crestItem.image_url} alt={crestItem.display_name} style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }} />
+                                  <div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#60a5fa' }}>{crestItem.display_name}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{crestItem.total_price}g • Crest</div>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
+                                  {Object.entries(crestItem.stats || {}).map(([statKey, val]) => {
+                                    if (!val) return null;
+                                    const statLabel = statKey.replace('_', ' ');
+                                    let iconId = 'BonusDamage';
+                                    if (statKey.includes('health')) iconId = 'HealthIconGreen';
+                                    else if (statKey.includes('mana')) iconId = 'ManaBlue';
+                                    else if (statKey.includes('physical_power')) iconId = 'ADIconOrange';
+                                    else if (statKey.includes('magical_power') || statKey.includes('energy_power')) iconId = 'APIconBlue';
+                                    else if (statKey.includes('physical_armor')) iconId = 'ArmorOrange';
+                                    else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
+                                    else if (statKey.includes('haste')) iconId = 'AbilityHaste';
+                                    else if (statKey.includes('crit')) iconId = 'CritIconGold';
+                                    else if (statKey.includes('magical_lifesteal')) iconId = 'MagicalLifesteal';
+                                    else if (statKey.includes('lifesteal')) iconId = 'Lifesteal';
+                                    else if (statKey.includes('omnivamp')) iconId = 'Omnivamp';
+                                    return (
+                                      <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
+                                        <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
+                                        {val} {statLabel}
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                               </div>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
-                                {Object.entries(crestItem.stats || {}).map(([statKey, val]) => {
-                                  if (!val) return null;
-                                  const statLabel = statKey.replace('_', ' ');
-                                  let iconId = 'BonusDamage';
-                                  if (statKey.includes('health')) iconId = 'HealthIconGreen';
-                                  else if (statKey.includes('mana')) iconId = 'ManaBlue';
-                                  else if (statKey.includes('physical_power')) iconId = 'ADIconOrange';
-                                  else if (statKey.includes('magical_power') || statKey.includes('energy_power')) iconId = 'APIconBlue';
-                                  else if (statKey.includes('physical_armor')) iconId = 'ArmorOrange';
-                                  else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
-                                  else if (statKey.includes('haste')) iconId = 'AbilityHaste';
-                                  else if (statKey.includes('crit')) iconId = 'CritIconGold';
-                                  else if (statKey.includes('magical_lifesteal')) iconId = 'MagicalLifesteal';
-                                  else if (statKey.includes('lifesteal')) iconId = 'Lifesteal';
-                                  else if (statKey.includes('omnivamp')) iconId = 'Omnivamp';
-                                  return (
-                                    <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
-                                      <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
-                                      {val} {statLabel}
-                                    </span>
-                                  );
-                                })}
-                              </div>
+                            ))}
+                          </div>
+                          {filteredCrests.length > visibleCrestsCount && (
+                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+                              <button
+                                onClick={() => setVisibleCrestsCount(prev => prev + 16)}
+                                style={{ padding: '8px 24px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'background 0.2s' }}
+                              >
+                                Load More Crests
+                              </button>
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
 
                       {browserTab === 'eternals' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                            {eternals.map((et) => {
-                              const isSelected = (activeBuild === 'B' ? buildEternalB : buildEternal)?.slug === et.slug;
-                              return (
-                                <div
-                                  key={et.slug}
-                                  onClick={() => {
-                                    if (activeBuild === 'B') {
-                                      setBuildEternalB(et)
-                                      setSelectedBlessingsB([])
-                                    } else {
-                                      setBuildEternal(et)
-                                      setSelectedBlessings([])
-                                    }
-                                  }}
-                                  style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '12px',
-                                    padding: '16px',
-                                    background: isSelected ? 'rgba(168,85,247,0.1)' : 'rgba(255,255,255,0.02)',
-                                    border: '1px solid ' + (isSelected ? '#a855f7' : 'rgba(255,255,255,0.05)'),
-                                    borderRadius: '12px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={et.image_url} alt={et.name} style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }} />
-                                    <div>
-                                      <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#c084fc' }}>{et.display_name || et.name}</div>
-                                      <div style={{ fontSize: '0.8rem', color: '#a855f7' }}>Eternal Category</div>
+                          <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                              {eternals.slice(0, visibleEternalsCount).map((et) => {
+                                const isSelected = (activeBuild === 'B' ? buildEternalB : buildEternal)?.slug === et.slug;
+                                return (
+                                  <div
+                                    key={et.slug}
+                                    onClick={() => {
+                                      if (activeBuild === 'B') {
+                                        setBuildEternalB(et)
+                                        setSelectedBlessingsB([])
+                                      } else {
+                                        setBuildEternal(et)
+                                        setSelectedBlessings([])
+                                      }
+                                    }}
+                                    style={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: '12px',
+                                      padding: '16px',
+                                      background: isSelected ? 'rgba(168,85,247,0.1)' : 'rgba(255,255,255,0.02)',
+                                      border: '1px solid ' + (isSelected ? '#a855f7' : 'rgba(255,255,255,0.05)'),
+                                      borderRadius: '12px',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img src={et.image_url} alt={et.name} style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }} />
+                                      <div>
+                                        <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#c084fc' }}>{et.display_name || et.name}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#a855f7' }}>Eternal Category</div>
+                                      </div>
                                     </div>
+                                    <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }} dangerouslySetInnerHTML={{ __html: parseDescription(et.description) }} />
                                   </div>
-                                  <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }} dangerouslySetInnerHTML={{ __html: parseDescription(et.description) }} />
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
+                            {eternals.length > visibleEternalsCount && (
+                              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+                                <button
+                                  onClick={() => setVisibleEternalsCount(prev => prev + 16)}
+                                  style={{ padding: '8px 24px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'background 0.2s' }}
+                                >
+                                  Load More Eternals
+                                </button>
+                              </div>
+                            )}
                           </div>
 
                           {/* Minor Blessings Config */}
