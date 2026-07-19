@@ -319,7 +319,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
           if (stat === 'physical_armor' && !((item.stats.physical_armor || 0) > 0)) matchesStats = false;
           if (stat === 'magical_armor' && !((item.stats.magical_armor || 0) > 0)) matchesStats = false;
           if (stat === 'ability_haste' && !((item.stats.ability_haste || 0) > 0)) matchesStats = false;
-          if (stat === 'crit_chance' && !((item.stats.crit_chance || 0) > 0)) matchesStats = false;
+          if (stat === 'crit_chance' && !((item.stats.crit_chance || item.stats.critical_chance || 0) > 0)) matchesStats = false;
         }
       }
 

@@ -516,7 +516,7 @@ export function calculateBuildStats(
     ability_haste: itemStatsSum.ability_haste || 0,
     physical_penetration: itemStatsSum.physical_penetration || 0,
     magical_penetration: itemStatsSum.magical_penetration || 0,
-    crit_chance: itemStatsSum.crit_chance || 0,
+    crit_chance: (itemStatsSum.crit_chance || 0) + (itemStatsSum.critical_chance || 0),
     lifesteal: itemStatsSum.lifesteal || 0,
     omnivamp: itemStatsSum.omnivamp || 0,
   }
