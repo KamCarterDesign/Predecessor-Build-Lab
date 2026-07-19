@@ -666,11 +666,64 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
     });
   };
 
+  const handleHeroSelect = (hero: HeroDoc) => {
+    setSelectedHero(hero);
+    setLevelA(1);
+    setLevelB(1);
+    setBuildItems([]);
+    setBuildCrest(null);
+    setBuildEternal(null);
+    setSelectedHeroB(null);
+    setBuildItemsB([]);
+    setBuildCrestB(null);
+    setBuildEternalB(null);
+  };
+
   return (
-    <div onMouseMove={handleMouseMove} style={{ backgroundColor: '#090d16', color: '#f1f5f9', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', paddingBottom: '90px' }}>
+    <div onMouseMove={handleMouseMove} style={{ backgroundColor: '#090d16', color: '#f1f5f9', minHeight: '100vh', fontFamily: '"Chakra Petch", system-ui, -apple-system, sans-serif', paddingBottom: '90px' }}>
       <Head>
         <title>Predecessor Build Lab — Simulated Theorycrafting</title>
         <meta name="description" content="Simulate hero statistics, experiment with custom item/crest combinations, analyze build DNA, strengths and weaknesses, and power spikes." />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Russo+One&display=swap" rel="stylesheet" />
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes slowPan {
+            0% { background-position: 50% 30%; }
+            50% { background-position: 55% 40%; }
+            100% { background-position: 50% 30%; }
+          }
+          .parallax-header {
+            animation: slowPan 40s ease-in-out infinite;
+          }
+          .russo-font {
+            font-family: 'Russo One', sans-serif !important;
+          }
+          .lab-layout-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+          @media (min-width: 992px) {
+            .lab-layout-grid {
+              grid-template-columns: 280px 1fr;
+            }
+          }
+          .quick-select-list::-webkit-scrollbar {
+            width: 6px;
+          }
+          .quick-select-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+          }
+          .quick-select-list::-webkit-scrollbar-thumb {
+            background: rgba(124, 58, 237, 0.3);
+            border-radius: 4px;
+          }
+          .quick-select-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(124, 58, 237, 0.5);
+          }
+        ` }} />
       </Head>
 
       {/* ── HEADER ───────────────────────────────────────────────────────────── */}
@@ -757,6 +810,50 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
         </div>
       </header>
 
+      {/* ── PARALLAX BANNER (Only in Initial Lab state) ── */}
+      {activeTab === 'lab' && !selectedHero && (
+        <div className="parallax-header" style={{
+          position: 'relative',
+          height: '280px',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          textAlign: 'center',
+          backgroundImage: 'linear-gradient(to bottom, rgba(9,13,22,0.3) 0%, rgba(9,13,22,0.85) 80%, #090d16 100%), url("/assets/hero-bg.jpg")',
+          backgroundAttachment: 'fixed',
+          backgroundPosition: 'center 30%',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'cover',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+        }}>
+          <div style={{ zIndex: 2, padding: '0 20px' }}>
+            <h1 className="russo-font" style={{
+              fontSize: '3.2rem',
+              fontWeight: 900,
+              margin: '0 0 10px 0',
+              letterSpacing: '3px',
+              color: '#f8fafc',
+              textShadow: '0 4px 12px rgba(0,0,0,0.85), 0 0 30px rgba(124,58,237,0.3)',
+              textTransform: 'uppercase'
+            }}>
+              Pick Your Hero
+            </h1>
+            <p style={{
+              color: '#A78BFA',
+              fontSize: '1.15rem',
+              fontWeight: 500,
+              textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+              letterSpacing: '1px',
+              margin: 0
+            }}>
+              Select a champion to enter the simulated theorycrafting sandbox
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── MAIN CONTENT CONTAINER ────────────────────────────────────────────── */}
       <main style={{ maxWidth: '1440px', margin: '0 auto', padding: '24px' }}>
         
@@ -764,71 +861,166 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
         {activeTab === 'lab' && (
           <div>
             {!selectedHero ? (
-              // HERO SELECTION GRID
-              <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
-                <div style={{ textAlign: 'center', margin: '40px 0' }}>
-                  <h2 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 10px 0', background: 'linear-gradient(to right, #3b82f6, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Pick Your Hero</h2>
-                  <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>Select a hero to enter the build simulation sandbox</p>
-                </div>
+              // HERO SELECTION GRID & QUICK SELECT
+              <div className="lab-layout-grid" style={{ animation: 'fadeIn 0.4s ease-out' }}>
+                {/* LEFT COLUMN: Name Search & Quick List Selection */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', height: 'fit-content' }}>
+                  <h3 className="russo-font" style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 4px 0', letterSpacing: '0.05em', color: '#cbd5e1' }}>Search Champion</h3>
+                  
+                  {/* Search Input Box */}
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+                      <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                      </svg>
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Enter hero name..."
+                      value={heroSearch}
+                      onChange={(e) => setHeroSearch(e.target.value)}
+                      style={{ width: '100%', background: '#090d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 12px 10px 36px', color: 'white', fontSize: '0.875rem', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'inherit' }}
+                    />
+                  </div>
 
-                {/* FILTERS */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', marginBottom: '32px' }}>
-                  <input
-                    type="text"
-                    placeholder="Search heroes..."
-                    value={heroSearch}
-                    onChange={(e) => setHeroSearch(e.target.value)}
-                    style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 16px', color: 'white', width: '260px' }}
-                  />
-                  <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    {['All', 'Fighter', 'Tank', 'Mage', 'Assassin', 'Support', 'Sharpshooter'].map((cls) => (
-                      <button
-                        key={cls}
-                        onClick={() => setSelectedClass(cls)}
-                        style={{ padding: '8px 16px', border: 'none', cursor: 'pointer', background: selectedClass === cls ? '#3b82f6' : '#111827', color: 'white', fontWeight: 600, fontSize: '0.875rem' }}
+                  <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', margin: '8px 0' }} />
+
+                  <h3 className="russo-font" style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 8px 0', letterSpacing: '0.05em', color: '#cbd5e1' }}>Quick Selection</h3>
+                  
+                  {/* Quick Select scrollable list */}
+                  <div className="quick-select-list" style={{ maxHeight: '380px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+                    {filteredHeroes.map((hero) => (
+                      <div
+                        key={hero.slug}
+                        onClick={() => handleHeroSelect(hero)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          background: 'rgba(255,255,255,0.01)',
+                          border: '1px solid rgba(255,255,255,0.03)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        className="quick-select-row"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(124, 58, 237, 0.08)'
+                          e.currentTarget.style.borderColor = 'rgba(124, 58, 237, 0.3)'
+                          e.currentTarget.style.transform = 'translateX(4px)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.01)'
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)'
+                          e.currentTarget.style.transform = 'translateX(0)'
+                        }}
                       >
-                        {cls}
-                      </button>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={hero.image_url} alt={hero.display_name} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#cbd5e1' }}>{hero.display_name}</span>
+                          <span style={{ fontSize: '0.65rem', color: '#7c3aed', textTransform: 'uppercase' }}>{hero.classes[0]}</span>
+                        </div>
+                      </div>
                     ))}
+                    {filteredHeroes.length === 0 && (
+                      <div style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '20px 0' }}>No heroes found</div>
+                    )}
                   </div>
                 </div>
 
-                {/* GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px' }}>
-                  {filteredHeroes.map((hero) => (
-                    <div
-                      key={hero.slug}
-                      onClick={() => {
-                        setSelectedHero(hero);
-                        setLevelA(1);
-                        setLevelB(1);
-                        setBuildItems([]);
-                        setBuildCrest(null);
-                        setBuildEternal(null);
-                        setSelectedHeroB(null);
-                        setBuildItemsB([]);
-                        setBuildCrestB(null);
-                        setBuildEternalB(null);
-                      }}
-                      style={{ cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', background: '#111827', border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s ease', position: 'relative' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)'
-                        e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
-                      }}
-                    >
-                      <div style={{ aspectRatio: '1/1', background: '#1e293b', overflow: 'hidden', position: 'relative' }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={hero.image_url} alt={hero.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '8px', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', textAlign: 'center' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{hero.display_name}</span>
+                {/* RIGHT COLUMN: Filters and main selection grid */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* FILTER PANEL */}
+                  <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '16px 20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
+                    <span className="russo-font" style={{ fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Class Filter:</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {['All', 'Fighter', 'Tank', 'Mage', 'Assassin', 'Support', 'Sharpshooter'].map((cls) => {
+                        const isActive = selectedClass === cls;
+                        return (
+                          <button
+                            key={cls}
+                            onClick={() => setSelectedClass(cls)}
+                            style={{
+                              padding: '6px 14px',
+                              border: isActive ? '1px solid #7c3aed' : '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              background: isActive ? '#7c3aed' : '#090d16',
+                              color: 'white',
+                              fontWeight: 600,
+                              fontSize: '0.8rem',
+                              letterSpacing: '0.5px',
+                              transition: 'all 0.2s',
+                              fontFamily: 'inherit',
+                              boxShadow: isActive ? '0 0 12px rgba(124,58,237,0.3)' : 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isActive) {
+                                e.currentTarget.style.borderColor = 'rgba(124, 58, 237, 0.5)';
+                                e.currentTarget.style.background = 'rgba(124, 58, 237, 0.05)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isActive) {
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                                e.currentTarget.style.background = '#090d16';
+                              }
+                            }}
+                          >
+                            {cls}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* PORTRAIT SELECTION GRID */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px' }}>
+                    {filteredHeroes.map((hero) => (
+                      <div
+                        key={hero.slug}
+                        onClick={() => handleHeroSelect(hero)}
+                        style={{
+                          cursor: 'pointer',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          background: '#111827',
+                          border: '1px solid rgba(255,255,255,0.05)',
+                          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                          position: 'relative',
+                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-6px)'
+                          e.currentTarget.style.borderColor = '#7c3aed'
+                          e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0,0,0,0.5), 0 0 15px rgba(124, 58, 237, 0.4)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)'
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+                          e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)'
+                        }}
+                      >
+                        <div style={{ aspectRatio: '1/1', background: '#1e293b', overflow: 'hidden', position: 'relative' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={hero.image_url} alt={hero.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <div style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            padding: '12px 8px',
+                            background: 'linear-gradient(to top, rgba(9,13,22,0.95) 20%, rgba(9,13,22,0.4) 70%, transparent 100%)',
+                            textAlign: 'center'
+                          }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '0.5px', color: '#f8fafc' }}>{hero.display_name}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (
