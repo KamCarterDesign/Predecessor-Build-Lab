@@ -88,5 +88,13 @@ export function parseDescription(text: string): string {
     parsed = parsed.replace(openRegex, `<span style="${style}">`).replace(closeRegex, '</span>');
   }
 
+  // 3. Clean up raw template placeholder tags like {MovementSpeed} or {Duration}
+  parsed = parsed.replace(/\{([A-Za-z0-9_]+)\}/g, (match, p1) => {
+    const spaced = p1
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+    return `<span style="color: #60a5fa; font-weight: 600;">${spaced}</span>`;
+  });
+
   return parsed;
 }

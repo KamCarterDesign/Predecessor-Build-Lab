@@ -50,8 +50,25 @@ export function calculateMatchupScore(
     }).length;
   };
 
-  const isMeleeA = (heroA.base_stats.attack_range[0] || 1300) < 300;
-  const isMeleeB = (heroB.base_stats.attack_range[0] || 1300) < 300;
+  const getHeroRangeType = (h: HeroDoc): 'Melee' | 'Ranged' | 'Hybrid' => {
+    if (h.abilities && h.abilities.length > 0) {
+      const lmb = h.abilities[0];
+      const desc = ((lmb.game_description || '') + ' ' + (lmb.menu_description || '') + ' ' + (lmb.type || '')).toLowerCase();
+      const isMeleeDesc = desc.includes('melee') || desc.includes('strike') || desc.includes('slash');
+      const isRangedDesc = desc.includes('ranged') || desc.includes('projectile') || desc.includes('shot') || desc.includes('fire');
+      
+      if (isMeleeDesc && isRangedDesc) return 'Hybrid';
+      if (isMeleeDesc) return 'Melee';
+      if (isRangedDesc) return 'Ranged';
+    }
+    return (h.base_stats.attack_range[0] || 1300) < 300 ? 'Melee' : 'Ranged';
+  };
+
+  const rangeTypeA = getHeroRangeType(heroA);
+  const rangeTypeB = getHeroRangeType(heroB);
+  
+  const isMeleeA = rangeTypeA === 'Melee' || rangeTypeA === 'Hybrid';
+  const isMeleeB = rangeTypeB === 'Melee' || rangeTypeB === 'Hybrid';
 
   const hpA = analysisA.totalStats.max_health || 1000;
   const hpB = analysisB.totalStats.max_health || 1000;
@@ -82,7 +99,7 @@ export function calculateMatchupScore(
   const finalOffA = clampValue(offA);
   const finalOffB = clampValue(offB);
 
-  let offExplanation = `${heroA.display_name} is a ${isMeleeA ? 'melee' : 'ranged'} fighter with a mobility rating of ${analysisA.dna.mobility.toFixed(1)}/10. `;
+  let offExplanation = `${heroA.display_name} is a ${rangeTypeA.toLowerCase()} fighter with a mobility rating of ${analysisA.dna.mobility.toFixed(1)}/10. `;
   if (hasChaseA) {
     offExplanation += `They possess active movement abilities for chasing down targets. `;
   } else {
@@ -99,7 +116,7 @@ export function calculateMatchupScore(
     offExplanation += `Their build incorporates armor/magic penetration to bypass opponent defenses. `;
   }
 
-  offExplanation += `Conversely, ${heroB.display_name} operates as a ${isMeleeB ? 'melee' : 'ranged'} fighter with a mobility rating of ${analysisB.dna.mobility.toFixed(1)}/10. `;
+  offExplanation += `Conversely, ${heroB.display_name} operates as a ${rangeTypeB.toLowerCase()} fighter with a mobility rating of ${analysisB.dna.mobility.toFixed(1)}/10. `;
   if (hasChaseB) {
     offExplanation += `They utilize gap-closers to pressure opponents. `;
   }

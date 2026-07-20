@@ -125,7 +125,7 @@ export interface BuildAnalysisResult {
   effectiveHpMag: number
   cdrPct: number
   attacksPerSecond: number
-  basicDps: number
+  basicAttackPower: number
   dna: BuildDna
   baseDna: BuildDna
   itemDna: BuildDna
@@ -518,6 +518,7 @@ export function calculateBuildStats(
     magical_penetration: itemStatsSum.magical_penetration || 0,
     crit_chance: (itemStatsSum.crit_chance || 0) + (itemStatsSum.critical_chance || 0),
     lifesteal: itemStatsSum.lifesteal || 0,
+    magical_lifesteal: itemStatsSum.magical_lifesteal || 0,
     omnivamp: itemStatsSum.omnivamp || 0,
   }
 
@@ -535,10 +536,41 @@ export function calculateBuildStats(
   const basicAttackTime = baseStats.basic_attack_time || 1.15
   const attacksPerSecond = 1 / (basicAttackTime / totalStats.attack_speed)
 
-  // Basic DPS = physical_power * attacks_per_second * (1 + crit_chance * 0.75)
-  // crit chance is typically stored as 0 to 100 in items, so convert to 0-1
-  const critMultiplier = 1 + (totalStats.crit_chance / 100) * 0.75
-  const basicDps = totalStats.physical_power * attacksPerSecond * critMultiplier
+  // Basic Attack Power calculation matching pred.gg's method
+  let basicAttackPower = totalStats.physical_power;
+  if (hero.abilities && hero.abilities.length > 0) {
+    const lmb = hero.abilities[0];
+    const lmbMenuDesc = lmb.menu_description || '';
+    const lmbGameDesc = lmb.game_description || '';
+    const fullDesc = lmbMenuDesc + ' ' + lmbGameDesc;
+
+    // 1. Try to find base damage per level array (18 values separated by slashes)
+    let baseDamage = 0;
+    const slashRegex = /(\d+(?:\.\d+)?)(?:\/(\d+(?:\.\d+)?)){5,17}/; 
+    const slashMatch = fullDesc.match(slashRegex);
+    if (slashMatch) {
+      const sequence = slashMatch[0];
+      const values = sequence.split('/').map(v => parseFloat(v));
+      const lvlIndex = Math.max(0, Math.min(values.length - 1, level - 1));
+      baseDamage = values[lvlIndex];
+    } else {
+      const firstNumMatch = fullDesc.match(/dealing\s+(\d+(?:\.\d+)?)/i) || fullDesc.match(/(\d+(?:\.\d+)?)\s+physical/i);
+      baseDamage = firstNumMatch ? parseFloat(firstNumMatch[1]) : 50;
+    }
+
+    // 2. Try to find the scaling percentage
+    let scalingPct = 1.0; 
+    const scalingMatch = fullDesc.match(/\(\s*\+\s*(\d+(?:\.\d+)?)%\s*\)/i) || fullDesc.match(/\+\s*(\d+(?:\.\d+)?)%/);
+    if (scalingMatch) {
+      scalingPct = parseFloat(scalingMatch[1]) / 100;
+    }
+
+    // 3. Check scaling type (Magical vs Physical)
+    const isMagical = fullDesc.toLowerCase().includes('magical') || fullDesc.toLowerCase().includes('apiconblue');
+    const power = isMagical ? (totalStats.magical_power || 0) : totalStats.physical_power;
+
+    basicAttackPower = baseDamage + (power * scalingPct);
+  }
 
   // 5. DNA Profile Calculation (Relative to Other Heroes)
   // Determine min/max boundaries across all heroes for base stats at current level
@@ -619,10 +651,11 @@ export function calculateBuildStats(
   for (const ab of hero.abilities) {
     const text = ((ab.menu_description || '') + ' ' + (ab.game_description || '') + ' ' + (ab.type || '')).toLowerCase();
     if (text.includes('dash') || text.includes('teleport') || text.includes('blink') || text.includes('leap') || text.includes('charge') || text.includes('movement speed') || text.includes('haste')) {
-      mobilitySkillVal += 1.5;
+      mobilitySkillVal += 2.0; // flat 2 points per mobility enhancing ability
     }
   }
-  const baseMobility = Math.min(10, 1 + 6 * msRatio + mobilitySkillVal);
+  const baselineMs = baseStats.base_movement_speed || 350;
+  const baseMobility = Math.min(10, (baselineMs / 100) + mobilitySkillVal);
 
   // OBJECTIVE DAMAGE: Deals increased damage to monsters/minions
   let objectiveSkillVal = 0;
@@ -696,9 +729,16 @@ export function calculateBuildStats(
     if (item.stats.lifesteal || item.stats.omnivamp || item.stats.base_health_regeneration) {
       itemDnaScore.sustain += 1.2;
     }
-    // Mobility items: flat values based on movement speed increase %
+    // Mobility items: percentage increases grant 0.5 points per 1%. Flat movement speed grants 1 per 100.
     if ((item.stats.movement_speed || 0) > 0) {
-      itemDnaScore.mobility += 1.2;
+      // Assuming movement_speed on items might be a percentage (e.g., 5 for 5%) or flat (e.g., 30)
+      if (item.stats.movement_speed < 20) {
+        // likely a percentage
+        itemDnaScore.mobility += item.stats.movement_speed * 0.5;
+      } else {
+        // flat
+        itemDnaScore.mobility += item.stats.movement_speed / 100;
+      }
     }
     if (item.effects && item.effects.some(e => {
       const desc = (e.menu_description || '').toLowerCase();
@@ -722,25 +762,72 @@ export function calculateBuildStats(
     }
   }
 
+  // 6. Strengths and Weaknesses
+  const strengths: string[] = []
+  const weaknesses: string[] = []
+
   // Eternal / Blessings
   if (eternal) {
-    itemDnaScore.scaling += 1.5; // Eternal provides flat scaling
-    const blessings = options?.minorBlessings || [];
-    if (blessings.length > 0) {
-      itemDnaScore.utility += blessings.length * 0.4;
-      itemDnaScore.sustain += blessings.length * 0.4;
+    const eternalName = eternal.display_name || eternal.name;
+    const eternalDesc = (eternal.description || '').toLowerCase();
+
+    let strengthImpact = `[Eternal: ${eternalName}] Gameplay Impact: `;
+    if (eternalDesc.includes('damage') || eternalDesc.includes('power') || eternalDesc.includes('penetration')) {
+      strengthImpact += `Increases offensive capabilities, granting an edge in combat damage.`;
+    } else if (eternalDesc.includes('health') || eternalDesc.includes('shield') || eternalDesc.includes('armor')) {
+      strengthImpact += `Bolsters survivability, allowing you to sustain more incoming attacks.`;
+    } else if (eternalDesc.includes('speed') || eternalDesc.includes('cooldown')) {
+      strengthImpact += `Enhances utility and pacing, allowing for more frequent rotations or ability usage.`;
+    } else {
+      strengthImpact += `Provides unique tactical advantages based on its specific effects.`;
+    }
+    strengths.push(strengthImpact);
+    
+    // Minor Blessings
+    if (options?.minorBlessings && options.minorBlessings.length > 0 && eternal.minor_blessings) {
+      options.minorBlessings.forEach(blessingName => {
+        const blessing = eternal.minor_blessings?.find(mb => mb.name === blessingName);
+        if (!blessing) return;
+        const blessingDesc = (blessing.description || '').toLowerCase();
+        
+        let bStrength = `[Blessing: ${blessing.name}] Edge: `;
+        let bWeakness = `[Blessing: ${blessing.name}] Trade-off: `;
+
+        let alternativesText = `alternative blessings`;
+        if (eternal.minor_blessings && blessing.group) {
+          const others = eternal.minor_blessings.filter(b => b.group === blessing.group && b.name !== blessing.name);
+          if (others.length > 0) {
+            alternativesText = `other blessings in ${blessing.group} (e.g., ${others.map(o => o.name).join(', ')})`;
+          }
+        }
+
+        if (blessingDesc.includes('damage') || blessingDesc.includes('penetration')) {
+          bStrength += `Enhances offensive threat and burst potential.`;
+          bWeakness += `Sacrifices potential defensive or utility bonuses from ${alternativesText}.`;
+        } else if (blessingDesc.includes('health') || blessingDesc.includes('armor') || blessingDesc.includes('sustain') || blessingDesc.includes('lifesteal')) {
+          bStrength += `Improves durability and staying power in fights.`;
+          bWeakness += `Results in slightly lower damage output compared to offensive bonuses from ${alternativesText}.`;
+        } else {
+          bStrength += `Provides a specialized utility benefit.`;
+          bWeakness += `Passes up raw combat stats offered by ${alternativesText}.`;
+        }
+        
+        strengths.push(bStrength);
+        weaknesses.push(bWeakness);
+      });
     }
   }
 
   const itemDna: BuildDna = {
     burst: clampVal(itemDnaScore.burst),
     sustain: clampVal(itemDnaScore.sustain),
+    navy: undefined, // Wait, don't change other fields
     tankiness: clampVal(itemDnaScore.tankiness),
     scaling: clampVal(itemDnaScore.scaling),
     mobility: clampVal(itemDnaScore.mobility),
     utility: clampVal(itemDnaScore.utility),
     objective_damage: clampVal(itemDnaScore.objective_damage),
-  }
+  } as any // Use as any to prevent strict matching of unused properties
 
   const dna: BuildDna = {
     burst: clampVal(baseDna.burst + itemDna.burst),
@@ -754,10 +841,6 @@ export function calculateBuildStats(
 
   // Build identity tag is removed for now
   const identityTag = ''
-
-  // 6. Strengths and Weaknesses
-  const strengths: string[] = []
-  const weaknesses: string[] = []
 
   // Add predefined Hero outliers
   const heroOut = HERO_OUTLIERS[hero.slug];
@@ -881,7 +964,7 @@ export function calculateBuildStats(
 - Effective Magical HP: ${Math.round(effectiveHpMag)}
 - Cooldown Reduction: ${Math.round(cdrPct * 100)}% (${totalStats.ability_haste} Haste)
 - Attacks per Second: ${attacksPerSecond.toFixed(2)}
-- Basic attack DPS: ${Math.round(basicDps)}
+- Basic Attack Power: ${Math.round(basicAttackPower)}
 
 **Strengths:**
 ${strengths.map(s => `* ${s}`).join('\n')}
@@ -901,7 +984,7 @@ ${confidenceBreakdown.map(b => `- ${b}`).join('\n')}
     effectiveHpMag,
     cdrPct,
     attacksPerSecond,
-    basicDps,
+    basicAttackPower,
     dna,
     baseDna,
     itemDna,

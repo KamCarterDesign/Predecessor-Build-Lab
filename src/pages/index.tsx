@@ -1165,12 +1165,12 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                         </div>
 
                         {[
-                          { name: 'Max Health', key: 'max_health', format: (v: number) => `${Math.round(v)} HP` },
-                          { name: 'Max Mana', key: 'max_mana', format: (v: number) => `${Math.round(v)} MP` },
-                          { name: 'Phys Power', key: 'physical_power', format: (v: number) => `${Math.round(v)}` },
-                          { name: 'Mag Power', key: 'magical_power', format: (v: number) => `${Math.round(v)}` },
-                          { name: 'Phys Armor', key: 'physical_armor', format: (v: number) => `${Math.round(v)}` },
-                          { name: 'Mag Armor', key: 'magical_armor', format: (v: number) => `${Math.round(v)}` },
+                          { name: 'Max Health', key: 'max_health', tooltip: 'Total health points from base hero stats and items.', format: (v: number) => `${Math.round(v)} HP` },
+                          { name: 'Max Mana', key: 'max_mana', tooltip: 'Total mana pool for ability usage.', format: (v: number) => `${Math.round(v)} MP` },
+                          { name: 'Phys Power', key: 'physical_power', tooltip: 'Increases damage of physical abilities and basic attacks.', format: (v: number) => `${Math.round(v)}` },
+                          { name: 'Mag Power', key: 'magical_power', tooltip: 'Increases damage of magical abilities.', format: (v: number) => `${Math.round(v)}` },
+                          { name: 'Phys Armor', key: 'physical_armor', tooltip: 'Mitigates incoming physical damage.', format: (v: number) => `${Math.round(v)}` },
+                          { name: 'Mag Armor', key: 'magical_armor', tooltip: 'Mitigates incoming magical damage.', format: (v: number) => `${Math.round(v)}` },
                         ].map((stat) => (
                           <div
                             key={stat.key}
@@ -1178,7 +1178,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                               item: buildItems[buildItems.length - 1]
                             })}
                             style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr', cursor: 'pointer' }}
-                            title="Click to explain this stat delta with rules engine"
+                            title={stat.tooltip + " (Click to explain this stat delta with rules engine)"}
                           >
                             <span style={{ color: '#94a3b8' }}>{stat.name}</span>
                             <span style={{ textAlign: 'right', fontWeight: 'bold' }}>{stat.format(analysisResult.totalStats[stat.key] || 0)}</span>
@@ -1188,7 +1188,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           </div>
                         ))}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr' }} title="Effective Health against physical damage, accounting for armor mitigation.">
                           <span style={{ color: '#94a3b8' }}>EHP (Physical)</span>
                           <strong style={{ color: '#ef4444', textAlign: 'right' }}>{Math.round(analysisResult.effectiveHpPhys)}</strong>
                           <strong style={{ color: '#ef4444', textAlign: 'right' }}>
@@ -1196,7 +1196,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           </strong>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr' }} title="Effective Health against magical damage, accounting for armor mitigation.">
                           <span style={{ color: '#94a3b8' }}>EHP (Magical)</span>
                           <strong style={{ color: '#3b82f6', textAlign: 'right' }}>{Math.round(analysisResult.effectiveHpMag)}</strong>
                           <strong style={{ color: '#3b82f6', textAlign: 'right' }}>
@@ -1204,7 +1204,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           </strong>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr' }} title="Cooldown Reduction percentage derived from Ability Haste.">
                           <span style={{ color: '#94a3b8' }}>CDR %</span>
                           <strong style={{ textAlign: 'right' }}>{Math.round(analysisResult.cdrPct * 100)}%</strong>
                           <strong style={{ textAlign: 'right', color: '#a855f7' }}>
@@ -1212,7 +1212,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           </strong>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr' }} title="Number of basic attacks per second.">
                           <span style={{ color: '#94a3b8' }}>Atk Speed</span>
                           <strong style={{ textAlign: 'right' }}>{analysisResult.attacksPerSecond.toFixed(2)}/s</strong>
                           <strong style={{ textAlign: 'right', color: '#a855f7' }}>
@@ -1220,11 +1220,21 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           </strong>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
-                          <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Basic DPS</span>
-                          <strong style={{ color: '#f59e0b', textAlign: 'right' }}>{Math.round(analysisResult.basicDps)}</strong>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }} title="Value of basic attacks (LMB) including contributions from power, items, and scaling.">
+                          <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Basic Attack Power</span>
+                          <strong style={{ color: '#f59e0b', textAlign: 'right' }}>{Math.round(analysisResult.basicAttackPower)}</strong>
                           <strong style={{ color: '#f59e0b', textAlign: 'right' }}>
-                            {analysisResultB ? Math.round(analysisResultB.basicDps) : ''}
+                            {analysisResultB ? Math.round(analysisResultB.basicAttackPower) : ''}
+                          </strong>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }} title="Sustainability: Lifesteal / Magical Lifesteal / Omnivamp %">
+                          <span style={{ color: '#10b981', fontWeight: 'bold' }}>Sustainability</span>
+                          <strong style={{ color: '#10b981', textAlign: 'right' }}>
+                            {`${analysisResult.totalStats.lifesteal || 0}/${analysisResult.totalStats.magical_lifesteal || 0}/${analysisResult.totalStats.omnivamp || 0}%`}
+                          </strong>
+                          <strong style={{ color: '#10b981', textAlign: 'right' }}>
+                            {analysisResultB ? `${analysisResultB.totalStats.lifesteal || 0}/${analysisResultB.totalStats.magical_lifesteal || 0}/${analysisResultB.totalStats.omnivamp || 0}%` : ''}
                           </strong>
                         </div>
                       </div>
@@ -2969,8 +2979,14 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
 
       {/* ── ABILITY INFORMATION MODAL/DRAWER ─────────────────────────────────── */}
       {selectedAbility && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', width: '500px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div 
+          onClick={() => setSelectedAbility(null)}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', width: '500px', maxWidth: '90vw', display: 'flex', flexDirection: 'column', gap: '16px', wordBreak: 'break-word' }}
+          >
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={selectedAbility.image_url} alt={selectedAbility.display_name} style={{ width: '64px', height: '64px', borderRadius: '8px' }} />
@@ -2980,10 +2996,10 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
               </div>
             </div>
 
-            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0, lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0, lineHeight: 1.5, wordBreak: 'break-word' }}>
               <span dangerouslySetInnerHTML={{ __html: parseDescription(selectedAbility.game_description) }} />
             </p>
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, fontStyle: 'italic' }}>
+            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, fontStyle: 'italic', wordBreak: 'break-word' }}>
               <span dangerouslySetInnerHTML={{ __html: parseDescription(selectedAbility.menu_description) }} />
             </p>
 
