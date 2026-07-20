@@ -31,16 +31,19 @@ export function parseDescription(text: string): string {
   if (!text) return '';
   let parsed = text;
 
-  // 0. If the description contains bullet points with unresolved template placeholders, remove those lines
-  if (parsed.includes('•') && parsed.includes('{')) {
-    parsed = parsed
-      .split(/<br\s*\/?>|\n/gi)
-      .filter(line => {
-        const isBullet = line.includes('•') || line.trim().startsWith('•');
-        const hasPlaceholder = /\{[A-Za-z0-9_]+\}/.test(line);
-        return !(isBullet && hasPlaceholder);
-      })
-      .join('<br>');
+  // 0. If the description contains unresolved template placeholders ({Variable}),
+  // discard the templated lines (which produce broken text like "Slow%", "Close Bonusx", "Armor Shred Durations")
+  // and preserve only the clean <Header> block if one exists.
+  if (parsed.includes('{')) {
+    const headerMatch = parsed.match(/<Header>([\s\S]*?)<\/Header>/i);
+    if (headerMatch) {
+      parsed = headerMatch[0];
+    } else {
+      parsed = parsed
+        .split(/<br\s*\/?>|\n/gi)
+        .filter(line => !line.includes('{') && !line.includes('}'))
+        .join('<br>');
+    }
   }
 
   // 1. Replace <img> tags with corresponding SVGs

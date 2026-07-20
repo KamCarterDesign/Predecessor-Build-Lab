@@ -290,6 +290,16 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
     setVisibleEternalsCount(16)
   }, [browserTab, itemSearch, itemClassFilter, itemTierFilter, activeStatFilters])
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedAbility(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       const matchesSearch = item.display_name.toLowerCase().includes(itemSearch.toLowerCase())
@@ -2981,11 +2991,11 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
       {selectedAbility && (
         <div 
           onClick={() => setSelectedAbility(null)}
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, cursor: 'pointer' }}
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', width: '500px', maxWidth: '90vw', display: 'flex', flexDirection: 'column', gap: '16px', wordBreak: 'break-word' }}
+            style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', width: '500px', maxWidth: '90vw', display: 'flex', flexDirection: 'column', gap: '16px', wordBreak: 'break-word', cursor: 'default' }}
           >
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2996,9 +3006,12 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
               </div>
             </div>
 
-            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0, lineHeight: 1.5, wordBreak: 'break-word' }}>
-              <span dangerouslySetInnerHTML={{ __html: parseDescription(selectedAbility.game_description) }} />
-            </p>
+            {parseDescription(selectedAbility.game_description) ? (
+              <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0, lineHeight: 1.5, wordBreak: 'break-word' }}>
+                <span dangerouslySetInnerHTML={{ __html: parseDescription(selectedAbility.game_description) }} />
+              </p>
+            ) : null}
+
             <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, fontStyle: 'italic', wordBreak: 'break-word' }}>
               <span dangerouslySetInnerHTML={{ __html: parseDescription(selectedAbility.menu_description) }} />
             </p>
