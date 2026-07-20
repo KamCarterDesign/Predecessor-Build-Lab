@@ -1139,23 +1139,60 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                   </div>
 
                   {/* ABILITIES SECTION */}
-                  <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px' }}>
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: '0 0 12px 0' }}>Hero Abilities</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                      {selectedHero.abilities.map((ability) => (
-                        <div
-                          key={ability.key}
-                          onClick={() => setSelectedAbility(ability)}
-                          style={{ cursor: 'pointer', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.08)', position: 'relative' }}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={ability.image_url} alt={ability.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <div style={{ position: 'absolute', top: 2, right: 2, background: 'black', borderRadius: '3px', padding: '1px 3px', fontSize: '10px', fontWeight: 'bold' }}>
-                            {ability.key}
-                          </div>
+                  <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>Hero Abilities</h4>
+                    
+                    {/* Hero A Abilities */}
+                    <div>
+                      {selectedHeroB && (
+                        <div style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ background: 'rgba(59, 130, 246, 0.15)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>Hero A</span>
+                          <span>{selectedHero.display_name}</span>
                         </div>
-                      ))}
+                      )}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        {selectedHero.abilities.map((ability) => (
+                          <div
+                            key={ability.key}
+                            onClick={() => setSelectedAbility({ ...ability, heroName: selectedHero.display_name, heroColor: '#3b82f6' })}
+                            style={{ cursor: 'pointer', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(59, 130, 246, 0.3)', position: 'relative' }}
+                            title={`${selectedHero.display_name} - ${ability.display_name}`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={ability.image_url} alt={ability.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', top: 2, right: 2, background: 'black', borderRadius: '3px', padding: '1px 3px', fontSize: '10px', fontWeight: 'bold' }}>
+                              {ability.key}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+
+                    {/* Hero B Abilities */}
+                    {selectedHeroB && (
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+                        <div style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ background: 'rgba(168, 85, 247, 0.15)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>Hero B</span>
+                          <span>{selectedHeroB.display_name}</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                          {selectedHeroB.abilities.map((ability) => (
+                            <div
+                              key={ability.key}
+                              onClick={() => setSelectedAbility({ ...ability, heroName: selectedHeroB.display_name, heroColor: '#a855f7' })}
+                              style={{ cursor: 'pointer', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(168, 85, 247, 0.3)', position: 'relative' }}
+                              title={`${selectedHeroB.display_name} - ${ability.display_name}`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={ability.image_url} alt={ability.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <div style={{ position: 'absolute', top: 2, right: 2, background: 'black', borderRadius: '3px', padding: '1px 3px', fontSize: '10px', fontWeight: 'bold' }}>
+                                {ability.key}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* REAL-TIME STATS PANEL */}
@@ -3002,7 +3039,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
               <img src={selectedAbility.image_url} alt={selectedAbility.display_name} style={{ width: '64px', height: '64px', borderRadius: '8px' }} />
               <div>
                 <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>{selectedAbility.display_name}</h4>
-                <span style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: 'bold' }}>Key: {selectedAbility.key} • {selectedAbility.type}</span>
+                <span style={{ fontSize: '0.85rem', color: selectedAbility.heroColor || '#3b82f6', fontWeight: 'bold' }}>
+                  {selectedAbility.heroName ? `${selectedAbility.heroName} • ` : ''}Key: {selectedAbility.key} • {selectedAbility.type}
+                </span>
               </div>
             </div>
 
