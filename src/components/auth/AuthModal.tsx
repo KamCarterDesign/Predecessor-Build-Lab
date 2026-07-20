@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase-client';
 import { doc, setDoc } from 'firebase/firestore';
 
@@ -9,10 +9,11 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset_password'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -21,9 +22,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setMessage('');
     
     try {
-      if (isLogin) {
+      if (mode === 'reset_password') {
+        await sendPasswordResetEmail(auth, email);
+        setMessage('✅ Password reset email sent! Check your inbox to reset your password.');
+        return;
+      }
+
+      if (mode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
         const userCred = await createUserWithEmailAndPassword(auth, email, password);
@@ -71,9 +79,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     <div style={overlayStyle}>
       <div style={modalStyle}>
         <button style={closeButtonStyle} onClick={onClose}>×</button>
-        <h2 style={{ marginTop: 0 }}>{isLogin ? 'Log In' : 'Sign Up'}</h2>
+        <h2 style={{ marginTop: 0 }}>
+          {mode === 'login' ? 'Log In' : mode === 'signup' ? 'Sign Up' : 'Reset Password'}
+        </h2>
+
+        {mode === 'reset_password' && (
+          <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '-8px', marginBottom: '16px' }}>
+            Enter your account email address and we&apos;ll send you a password reset link.
+          </p>
+        )}
         
         {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</p>}
+        {message && <p style={{ color: '#10b981', fontSize: '0.85rem', background: 'rgba(16, 185, 129, 0.1)', padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{message}</p>}
         
         <form onSubmit={handleEmailAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <input 
@@ -84,22 +101,51 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             required
             style={inputStyle}
           />
-          <input 
-            type="password" 
-            placeholder="Password" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={inputStyle}
-          />
+          {mode !== 'reset_password' && (
+            <div>
+              <input 
+                type="password" 
+                placeholder="Password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={inputStyle}
+              />
+              {mode === 'login' && (
+                <div style={{ textAlign: 'right', marginTop: '6px' }}>
+                  <span 
+                    onClick={() => { setMode('reset_password'); setError(''); setMessage(''); }}
+                    style={{ fontSize: '0.75rem', color: '#66b2ff', cursor: 'pointer' }}
+                  >
+                    Forgot Password?
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           <button type="submit" disabled={loading} style={primaryButtonStyle}>
-            {loading ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up')}
+            {loading ? 'Processing...' : (mode === 'login' ? 'Log In' : mode === 'signup' ? 'Sign Up' : 'Send Reset Link')}
           </button>
         </form>
         
-        <p style={{ textAlign: 'center', marginTop: '1rem', cursor: 'pointer', color: '#66b2ff' }} onClick={() => setIsLogin(!isLogin)}>
-          {isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+          {mode === 'reset_password' ? (
+            <span 
+              style={{ cursor: 'pointer', color: '#66b2ff', fontSize: '0.85rem' }} 
+              onClick={() => { setMode('login'); setError(''); setMessage(''); }}
+            >
+              ← Back to Log In
+            </span>
+          ) : (
+            <span 
+              style={{ cursor: 'pointer', color: '#66b2ff', fontSize: '0.85rem' }} 
+              onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage(''); }}
+            >
+              {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Log in"}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
