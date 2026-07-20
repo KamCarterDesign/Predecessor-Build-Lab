@@ -137,6 +137,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [saveBuildName, setSaveBuildName] = useState('')
   const [saveBuildDesc, setSaveBuildDesc] = useState('')
+  const [isPendingSaveAfterAuth, setIsPendingSaveAfterAuth] = useState(false)
   // ── Global Search States ───────────────────────────────────────────────────
   const [globalSearchQuery, setGlobalSearchQuery] = useState('')
   const [showGlobalSearchResults, setShowGlobalSearchResults] = useState(false)
@@ -578,69 +579,121 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   }
 
   // ── Save Build Handler ─────────────────────────────────────────────────────
-  // ── Save Build Handler ─────────────────────────────────────────────────────
-  const triggerSaveBuild = () => {
-    const activeHero = activeBuild === 'B' ? selectedHeroB : selectedHero
-    if (!activeHero || !saveBuildName) return
+  const performSaveBuild = (name: string, description: string) => {
+    if (!selectedHero || !name) return
 
-    const newBuild = {
+    const goldA = buildItems.reduce((acc, curr) => acc + curr.total_price, 0) + (buildCrest?.total_price || 0)
+    const goldB = selectedHeroB
+      ? buildItemsB.reduce((acc, curr) => acc + curr.total_price, 0) + (buildCrestB?.total_price || 0)
+      : 0
+
+    const newBuild: any = {
       id: Date.now().toString(),
-      name: saveBuildName,
-      description: saveBuildDesc,
-      heroSlug: activeHero.slug,
-      heroName: activeHero.display_name,
-      role: activeBuild === 'B' ? buildRoleB : buildRole,
-      level: activeBuild === 'B' ? levelB : levelA,
-      items: (activeBuild === 'B' ? buildItemsB : buildItems).map((i) => i.slug),
-      crest: (activeBuild === 'B' ? buildCrestB : buildCrest)?.slug || null,
-      eternal: (activeBuild === 'B' ? buildEternalB : buildEternal)?.slug || null,
-      gold: (activeBuild === 'B' ? buildItemsB : buildItems).reduce((acc, curr) => acc + curr.total_price, 0) + ((activeBuild === 'B' ? buildCrestB : buildCrest)?.total_price || 0),
+      name: name,
+      description: description,
+      // Hero A Specs
+      heroSlug: selectedHero.slug,
+      heroName: selectedHero.display_name,
+      role: buildRole,
+      level: levelA,
+      items: buildItems.map((i) => i.slug),
+      crest: buildCrest?.slug || null,
+      eternal: buildEternal?.slug || null,
+      gold: goldA,
       createdAt: new Date().toISOString(),
+    }
+
+    // Include Hero B Specs if selectedHeroB is active
+    if (selectedHeroB) {
+      newBuild.heroBSlug = selectedHeroB.slug
+      newBuild.heroBName = selectedHeroB.display_name
+      newBuild.roleB = buildRoleB
+      newBuild.levelB = levelB
+      newBuild.itemsB = buildItemsB.map((i) => i.slug)
+      newBuild.crestB = buildCrestB?.slug || null
+      newBuild.eternalB = buildEternalB?.slug || null
+      newBuild.goldB = goldB
+      newBuild.totalGold = goldA + goldB
     }
 
     const updated = [newBuild, ...savedBuilds]
     setSavedBuilds(updated)
     localStorage.setItem('predecessor_saved_builds', JSON.stringify(updated))
 
+    if (user) {
+      syncBuildsToCloud(user.uid, updated)
+    }
+
     setIsSaveModalOpen(false)
     setSaveBuildName('')
     setSaveBuildDesc('')
+    setIsPendingSaveAfterAuth(false)
     setActiveTab('saved')
   }
+
+  const triggerSaveBuild = () => {
+    if (!selectedHero || !saveBuildName) return
+
+    // Require user account to complete save, preserving fields and opening AuthModal if unauthenticated
+    if (!user) {
+      setIsSaveModalOpen(false)
+      setIsPendingSaveAfterAuth(true)
+      setIsAuthModalOpen(true)
+      return
+    }
+
+    performSaveBuild(saveBuildName, saveBuildDesc)
+  }
+
+  // Automatically execute pending save once user signs in / registers
+  useEffect(() => {
+    if (user && isPendingSaveAfterAuth && saveBuildName && selectedHero) {
+      performSaveBuild(saveBuildName, saveBuildDesc)
+    }
+  }, [user, isPendingSaveAfterAuth])
 
   const deleteSavedBuild = (id: string) => {
     const updated = savedBuilds.filter((b) => b.id !== id)
     setSavedBuilds(updated)
     localStorage.setItem('predecessor_saved_builds', JSON.stringify(updated))
+    if (user) {
+      syncBuildsToCloud(user.uid, updated)
+    }
   }
 
   const loadSavedBuild = (build: any) => {
-    const hero = heroes.find((h) => h.slug === build.heroSlug)
-    if (hero) {
-      if (activeBuild === 'B') {
-        setSelectedHeroB(hero)
-        setLevelB(build.level || 1)
-        setBuildRoleB(build.role || 'Offlane')
-        const matchedItems = (build.items || []).map((slug: string) => items.find((i) => i.slug === slug)).filter(Boolean) as ItemDoc[]
-        setBuildItemsB(matchedItems)
-        const crestItem = items.find((i) => i.slug === build.crest) || null
-        setBuildCrestB(crestItem)
-        const eternalItem = eternals.find((e) => e.slug === build.eternal) || null
-        setBuildEternalB(eternalItem)
-      } else {
-        setSelectedHero(hero)
-        setLevelA(build.level || 1)
-        setBuildRole(build.role || 'Offlane')
-        const matchedItems = (build.items || []).map((slug: string) => items.find((i) => i.slug === slug)).filter(Boolean) as ItemDoc[]
-        setBuildItems(matchedItems)
-        const crestItem = items.find((i) => i.slug === build.crest) || null
-        setBuildCrest(crestItem)
-        const eternalItem = eternals.find((e) => e.slug === build.eternal) || null
-        setBuildEternal(eternalItem)
-      }
-
-      setActiveTab('lab')
+    // Load Hero A
+    const heroA = heroes.find((h) => h.slug === build.heroSlug)
+    if (heroA) {
+      setSelectedHero(heroA)
+      setLevelA(build.level || 1)
+      setBuildRole(build.role || 'Offlane')
+      const matchedItemsA = (build.items || []).map((slug: string) => items.find((i) => i.slug === slug)).filter(Boolean) as ItemDoc[]
+      setBuildItems(matchedItemsA)
+      setBuildCrest(items.find((i) => i.slug === build.crest) || null)
+      setBuildEternal(eternals.find((e) => e.slug === build.eternal) || null)
     }
+
+    // Load Hero B if present in saved composition
+    if (build.heroBSlug) {
+      const heroB = heroes.find((h) => h.slug === build.heroBSlug)
+      if (heroB) {
+        setSelectedHeroB(heroB)
+        setLevelB(build.levelB || 1)
+        setBuildRoleB(build.roleB || 'Offlane')
+        const matchedItemsB = (build.itemsB || []).map((slug: string) => items.find((i) => i.slug === slug)).filter(Boolean) as ItemDoc[]
+        setBuildItemsB(matchedItemsB)
+        setBuildCrestB(items.find((i) => i.slug === build.crestB) || null)
+        setBuildEternalB(eternals.find((e) => e.slug === build.eternal) || null)
+      }
+    } else {
+      setSelectedHeroB(null)
+      setBuildItemsB([])
+      setBuildCrestB(null)
+      setBuildEternalB(null)
+    }
+
+    setActiveTab('lab')
   }
 
   const handleShareBuild = () => {
@@ -1327,14 +1380,11 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           </strong>
                         </span>
                         <button
-                          disabled={activeBuild === 'A'
-                            ? (buildItems.length === 0 && !buildCrest && !buildEternal)
-                            : (buildItemsB.length === 0 && !buildCrestB && !buildEternalB)
-                          }
+                          disabled={!selectedHero}
                           onClick={() => setIsSaveModalOpen(true)}
-                          style={{ padding: '4px 10px', border: 'none', borderRadius: '6px', background: '#10b981', color: 'white', fontWeight: 'bold', fontSize: '0.8rem', cursor: 'pointer' }}
+                          style={{ padding: '6px 14px', border: 'none', borderRadius: '6px', background: !selectedHero ? '#374151' : '#10b981', color: 'white', fontWeight: 'bold', fontSize: '0.85rem', cursor: !selectedHero ? 'not-allowed' : 'pointer' }}
                         >
-                          💾 Save {activeBuild}
+                          💾 Save Build
                         </button>
                       </div>
                     </div>
@@ -2202,15 +2252,26 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
                 {savedBuilds.map((build) => {
-                  const heroObj = heroes.find(h => h.slug === build.heroSlug)
+                  const heroObjA = heroes.find(h => h.slug === build.heroSlug)
+                  const heroObjB = build.heroBSlug ? heroes.find(h => h.slug === build.heroBSlug) : null
+                  const totalCost = build.totalGold || ((build.gold || 0) + (build.goldB || 0))
+
                   return (
                     <div key={build.id} style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={heroObj?.image_url} alt={build.heroName} style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #3b82f6' }} />
+                        <div style={{ display: 'flex', position: 'relative' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={heroObjA?.image_url} alt={build.heroName} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #3b82f6', zIndex: 2 }} />
+                          {heroObjB && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={heroObjB?.image_url} alt={build.heroBName} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #a855f7', marginLeft: '-16px', zIndex: 1 }} />
+                          )}
+                        </div>
                         <div>
                           <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>{build.name}</h4>
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{build.heroName} • {build.role} • Lvl {build.level}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                            {heroObjB ? `${build.heroName} vs ${build.heroBName} • Matchup Spec` : `${build.heroName} • ${build.role} • Lvl ${build.level}`}
+                          </span>
                         </div>
                       </div>
 
@@ -2219,7 +2280,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                       )}
 
                       <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.85rem', color: '#eab308', fontWeight: 'bold' }}>Cost: {build.gold}g</span>
+                        <span style={{ fontSize: '0.85rem', color: '#eab308', fontWeight: 'bold' }}>Cost: {totalCost}g</span>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             onClick={() => loadSavedBuild(build)}
@@ -3004,6 +3065,12 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                 style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '8px 12px', color: 'white', minHeight: '80px', fontFamily: 'inherit' }}
               />
             </div>
+
+            {!user && (
+              <p style={{ fontSize: '0.75rem', color: '#fbbf24', margin: 0, fontStyle: 'italic' }}>
+                Note: Account authentication will be required on the next step to complete saving your specification.
+              </p>
+            )}
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
               <button
