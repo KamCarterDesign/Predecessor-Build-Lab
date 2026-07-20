@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase-client';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -32,6 +32,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           createdAt: new Date().toISOString(),
           isPremium: false,
         });
+
+        // Trigger Firebase Auth Email Verification
+        try {
+          await sendEmailVerification(userCred.user);
+        } catch (e) {
+          console.warn('Firebase email verification send failed:', e);
+        }
+        
+        // Trigger Custom Confirmation Email API
+        try {
+          await fetch('/api/email/send-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userCred.user.email, userId: userCred.user.uid }),
+          });
+        } catch (e) {
+          console.warn('Confirmation email API dispatch failed:', e);
+        }
       }
       onClose();
     } catch (err: any) {
@@ -49,42 +67,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleGoogleAuth = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      const userRef = doc(db, 'users', result.user.uid);
-      const docSnap = await getDoc(userRef);
-      
-      if (!docSnap.exists()) {
-        await setDoc(userRef, {
-          email: result.user.email,
-          createdAt: new Date().toISOString(),
-          isPremium: false,
-        });
-      }
-      onClose();
-    } catch (err: any) {
-      if (err.code === 'auth/configuration-not-found') {
-        setError('Google Sign-In is not enabled in Firebase Console. Please enable Google under Authentication > Sign-in method in Firebase Console, or sign up with Email & Password.');
-      } else {
-        setError(err.message || 'Google Auth failed');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div style={overlayStyle}>
       <div style={modalStyle}>
         <button style={closeButtonStyle} onClick={onClose}>×</button>
         <h2 style={{ marginTop: 0 }}>{isLogin ? 'Log In' : 'Sign Up'}</h2>
         
-        {error && <p style={{ color: 'red', fontSize: '0.9rem' }}>{error}</p>}
+        {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</p>}
         
         <form onSubmit={handleEmailAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <input 
@@ -107,12 +96,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             {loading ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up')}
           </button>
         </form>
-        
-        <div style={{ margin: '1rem 0', textAlign: 'center' }}>or</div>
-        
-        <button onClick={handleGoogleAuth} disabled={loading} style={googleButtonStyle}>
-          Continue with Google
-        </button>
         
         <p style={{ textAlign: 'center', marginTop: '1rem', cursor: 'pointer', color: '#66b2ff' }} onClick={() => setIsLogin(!isLogin)}>
           {isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
@@ -154,12 +137,6 @@ const inputStyle: React.CSSProperties = {
 
 const primaryButtonStyle: React.CSSProperties = {
   padding: '0.75rem', borderRadius: '4px', border: 'none',
-  backgroundColor: '#4CAF50', color: 'white', fontWeight: 'bold',
-  cursor: 'pointer', width: '100%'
-};
-
-const googleButtonStyle: React.CSSProperties = {
-  padding: '0.75rem', borderRadius: '4px', border: '1px solid #ddd',
-  backgroundColor: 'white', color: '#333', fontWeight: 'bold',
+  backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold',
   cursor: 'pointer', width: '100%'
 };
