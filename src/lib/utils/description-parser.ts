@@ -31,6 +31,18 @@ export function parseDescription(text: string): string {
   if (!text) return '';
   let parsed = text;
 
+  // 0. If the description contains bullet points with unresolved template placeholders, remove those lines
+  if (parsed.includes('•') && parsed.includes('{')) {
+    parsed = parsed
+      .split(/<br\s*\/?>|\n/gi)
+      .filter(line => {
+        const isBullet = line.includes('•') || line.trim().startsWith('•');
+        const hasPlaceholder = /\{[A-Za-z0-9_]+\}/.test(line);
+        return !(isBullet && hasPlaceholder);
+      })
+      .join('<br>');
+  }
+
   // 1. Replace <img> tags with corresponding SVGs
   const imgKeys = [
     'ADIconOrange',
