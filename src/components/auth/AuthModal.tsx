@@ -35,7 +35,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       }
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      if (err.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists. Please log in instead.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password must be at least 6 characters long.');
+      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Invalid email or password.');
+      } else {
+        setError(err.message || 'Authentication failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -60,7 +68,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       }
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Google Auth failed');
+      if (err.code === 'auth/configuration-not-found') {
+        setError('Google Sign-In is not enabled in Firebase Console. Please enable Google under Authentication > Sign-in method in Firebase Console, or sign up with Email & Password.');
+      } else {
+        setError(err.message || 'Google Auth failed');
+      }
     } finally {
       setLoading(false);
     }
