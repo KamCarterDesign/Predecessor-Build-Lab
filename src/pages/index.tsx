@@ -219,6 +219,8 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   const [selectedLibraryItem, setSelectedLibraryItem] = useState<ItemDoc | null>(null)
   const [selectedLibraryEternal, setSelectedLibraryEternal] = useState<EternalDoc | null>(null)
   const [libraryHeroLevel, setLibraryHeroLevel] = useState<number>(1)
+  const [librarySearchQuery, setLibrarySearchQuery] = useState('')
+  const [libraryCalculatorItem, setLibraryCalculatorItem] = useState<ItemDoc | null>(null)
 
   // ── Revamped Feed States ───────────────────────────────────────────────────
   const [feedFilter, setFeedFilter] = useState<'all' | 'official' | 'ai_posts' | 'youtube'>('all')
@@ -238,6 +240,74 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   const [loadedFeedItems, setLoadedFeedItems] = useState<any[]>(feedItems)
   const [loadingMoreFeed, setLoadingMoreFeed] = useState(false)
   const [hasMoreFeed, setHasMoreFeed] = useState(true)
+
+  const renderHeroFilters = () => {
+    return (
+      <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
+          <span className="russo-font" style={{ fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase', minWidth: '110px' }}>Class Filter:</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {['All', 'Fighter', 'Tank', 'Mage', 'Assassin', 'Support', 'Sharpshooter'].map((cls) => {
+              const isActive = selectedClass === cls;
+              return (
+                <button
+                  key={cls}
+                  onClick={() => setSelectedClass(cls)}
+                  style={{
+                    padding: '6px 14px',
+                    border: isActive ? '1px solid #7c3aed' : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    background: isActive ? '#7c3aed' : '#090d16',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.2s',
+                    fontFamily: 'inherit',
+                    boxShadow: isActive ? '0 0 12px rgba(124,58,237,0.3)' : 'none'
+                  }}
+                >
+                  {cls}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
+          <span className="russo-font" style={{ fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase', minWidth: '110px' }}>Role Filter:</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {['All', 'Offlane', 'Jungle', 'Midlane', 'Carry', 'Support'].map((role) => {
+              const isActive = selectedRole === role;
+              return (
+                <button
+                  key={role}
+                  onClick={() => setSelectedRole(role)}
+                  style={{
+                    padding: '6px 14px',
+                    border: isActive ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    background: isActive ? '#3b82f6' : '#090d16',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.2s',
+                    fontFamily: 'inherit',
+                    boxShadow: isActive ? '0 0 12px rgba(59,130,246,0.3)' : 'none'
+                  }}
+                >
+                  {role}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Fetch UGC YouTube Videos, AI Posts, and Official News on mount or filter change
   useEffect(() => {
