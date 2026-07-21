@@ -229,6 +229,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   const [selectedAiPostModal, setSelectedAiPostModal] = useState<any | null>(null)
 
   const [officialNewsItems, setOfficialNewsItems] = useState<any[]>([])
+  const [officialCategoryFilter, setOfficialCategoryFilter] = useState<string>('all')
+  const [selectedOfficialNewsUrl, setSelectedOfficialNewsUrl] = useState<string | null>(null)
+
   const [loadedFeedItems, setLoadedFeedItems] = useState<any[]>(feedItems)
   const [loadingMoreFeed, setLoadingMoreFeed] = useState(false)
   const [hasMoreFeed, setHasMoreFeed] = useState(true)
@@ -2950,7 +2953,16 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                               </span>
                             ))}
                           </div>
-                          <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 'bold' }}>Read Full Guide →</span>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <a
+                              href={`/posts/${post.slug}`}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 'bold', textDecoration: 'none', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: '4px' }}
+                            >
+                              SEO Page ↗
+                            </a>
+                            <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 'bold' }}>Quick View →</span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -2958,54 +2970,109 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
               )}
             </div>
 
-            {/* ── SECTION 3: OFFICIAL PREDECESSOR NEWS ────────────────────────────── */}
+            {/* ── SECTION 3: OFFICIAL PREDECESSOR NEWS WITH CATEGORY TABS & IFRAME ─ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 'bold', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ color: '#3b82f6' }}>📰</span> Official Predecessor Announcements
-                </h3>
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Direct developer updates from predecessors official news page (predecessorgame.com)</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 'bold', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#3b82f6' }}>📰</span> Official Predecessor Announcements
+                  </h3>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Direct developer updates from predecessors official news page (predecessorgame.com)</span>
+                </div>
+
+                {/* Category Filter Tabs (Matching Official Site) */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'all', label: 'All News' },
+                    { id: 'dev_updates', label: '🛠️ Dev Updates' },
+                    { id: 'patch_notes', label: '📋 Patch Notes' },
+                    { id: 'announcements', label: '📢 Announcements' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setOfficialCategoryFilter(tab.id)}
+                      style={{
+                        padding: '6px 14px',
+                        background: officialCategoryFilter === tab.id ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                        color: officialCategoryFilter === tab.id ? 'white' : '#cbd5e1',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '8px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-                {officialNewsItems.slice(0, 6).map((item) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      background: '#111827',
-                      border: '2px solid #3b82f6',
-                      borderRadius: '16px',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    <div style={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden', background: '#1e293b' }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.image_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold', background: '#3b82f6', color: 'white', padding: '4px 8px', borderRadius: '6px' }}>
-                          Official Announcement
-                        </span>
+                {officialNewsItems
+                  .filter((item) => {
+                    if (officialCategoryFilter === 'all') return true
+                    const lowerTitle = (item.title || '').toLowerCase()
+                    const lowerUrl = (item.content_url || '').toLowerCase()
+                    if (officialCategoryFilter === 'dev_updates') return lowerTitle.includes('dev') || lowerUrl.includes('dev')
+                    if (officialCategoryFilter === 'patch_notes') return lowerTitle.includes('patch') || lowerUrl.includes('patch')
+                    if (officialCategoryFilter === 'announcements') return lowerTitle.includes('announc') || lowerTitle.includes('news')
+                    return true
+                  })
+                  .slice(0, 8)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedOfficialNewsUrl(item.content_url)}
+                      style={{
+                        background: '#111827',
+                        border: '2px solid #3b82f6',
+                        borderRadius: '16px',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                    >
+                      <div style={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden', background: '#1e293b' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.image_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', background: '#3b82f6', color: 'white', padding: '4px 8px', borderRadius: '6px' }}>
+                            Official Announcement
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', margin: 0, color: 'white', lineHeight: '1.4' }}>{item.title}</h4>
-                      <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineClamp: 3, WebkitLineClamp: 3, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.excerpt}</p>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', paddingTop: '10px' }}>
-                        <a
-                          href={item.content_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ textDecoration: 'none', padding: '6px 12px', background: '#3b82f6', color: 'white', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}
-                        >
-                          Read on Predecessor Site ↗
-                        </a>
+                      <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', margin: 0, color: 'white', lineHeight: '1.4' }}>{item.title}</h4>
+                        <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineClamp: 3, WebkitLineClamp: 3, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.excerpt}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '10px' }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedOfficialNewsUrl(item.content_url)
+                            }}
+                            style={{ padding: '6px 12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+                          >
+                            Read In-App (Embed) 👁️
+                          </button>
+                          <a
+                            href={item.content_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ textDecoration: 'none', color: '#94a3b8', fontSize: '0.75rem' }}
+                          >
+                            External ↗
+                          </a>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
 
@@ -3103,12 +3170,20 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                         Author: {selectedAiPostModal.author} • Published: {new Date(selectedAiPostModal.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <button
-                      onClick={() => setSelectedAiPostModal(null)}
-                      style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', padding: '6px 12px', borderRadius: '6px', fontSize: '0.9rem', cursor: 'pointer' }}
-                    >
-                      Close ✕
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <a
+                        href={`/posts/${selectedAiPostModal.slug}`}
+                        style={{ padding: '6px 12px', background: '#3b82f6', color: 'white', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 'bold' }}
+                      >
+                        Open SEO Link ↗
+                      </a>
+                      <button
+                        onClick={() => setSelectedAiPostModal(null)}
+                        style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', padding: '6px 12px', borderRadius: '6px', fontSize: '0.9rem', cursor: 'pointer' }}
+                      >
+                        Close ✕
+                      </button>
+                    </div>
                   </div>
 
                   {/* Summary & Tags */}
@@ -3126,6 +3201,70 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                   {/* Full Body Markdown Text */}
                   <div style={{ background: '#020617', padding: '20px', borderRadius: '8px', border: '1px solid #1e293b', lineHeight: '1.6', fontSize: '0.9rem', whiteSpace: 'pre-wrap', color: '#e2e8f0' }}>
                     {selectedAiPostModal.content}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── MODAL 3: OFFICIAL NEWS IFRAME EMBED VIEWER ──────────────────────── */}
+            {selectedOfficialNewsUrl && (
+              <div
+                onClick={() => setSelectedOfficialNewsUrl(null)}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0,0,0,0.85)',
+                  zIndex: 9999,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '20px',
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: '#0f172a',
+                    borderRadius: '16px',
+                    width: '100%',
+                    maxWidth: '1050px',
+                    height: '90vh',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: '#1e293b', borderBottom: '1px solid #334155' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontWeight: 'bold', color: 'white', fontSize: '0.95rem' }}>📰 Official Predecessor Announcement Reader</span>
+                      <span style={{ fontSize: '0.75rem', background: '#3b82f6', color: 'white', padding: '2px 8px', borderRadius: '4px' }}>In-App Embed</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <a
+                        href={selectedOfficialNewsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: 'none', padding: '6px 12px', background: '#334155', color: '#38bdf8', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold' }}
+                      >
+                        Open External Site ↗
+                      </a>
+                      <button
+                        onClick={() => setSelectedOfficialNewsUrl(null)}
+                        style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, width: '100%', background: 'white' }}>
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={selectedOfficialNewsUrl}
+                      title="Official Predecessor Announcement"
+                      frameBorder="0"
+                    />
                   </div>
                 </div>
               </div>
@@ -3365,7 +3504,16 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   <div style={{ fontSize: '0.7rem', color: '#3b82f6', fontWeight: 'bold' }}>{post.category?.replace('_', ' ').toUpperCase()}</div>
                                   <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'white' }}>{post.title}</div>
                                   <div style={{ fontSize: '0.8rem', color: '#cbd5e1', lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.summary}</div>
-                                  <div style={{ fontSize: '0.7rem', color: '#60a5fa', marginTop: '4px', fontWeight: 'bold' }}>Read Guide →</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                                    <a
+                                      href={`/posts/${post.slug}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 'bold', textDecoration: 'none' }}
+                                    >
+                                      SEO Link ↗
+                                    </a>
+                                    <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 'bold' }}>Read Guide →</span>
+                                  </div>
                                 </div>
                               ))}
                             </div>
