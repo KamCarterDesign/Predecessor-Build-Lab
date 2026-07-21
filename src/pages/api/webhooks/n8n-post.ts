@@ -46,15 +46,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Extract snippet if summary not provided
     const postSummary = summary || content.slice(0, 180).replace(/[#*`]/g, '') + '...'
 
-    // Normalized tags array
-    const parsedTags = Array.isArray(tags)
+    // Normalized tags array with default taxonomy fallback
+    let parsedTags = Array.isArray(tags)
       ? tags
       : typeof tags === 'string'
       ? tags.split(',').map((t: string) => t.trim())
       : []
 
-    if (heroId && !parsedTags.includes(heroId)) {
-      parsedTags.push(heroId)
+    if (parsedTags.length === 0) {
+      parsedTags = ['Guide', 'Gameplay']
+    }
+
+    if (heroId && !parsedTags.some(t => t.toLowerCase() === heroId.toLowerCase())) {
+      parsedTags.push(heroId.charAt(0).toUpperCase() + heroId.slice(1))
     }
 
     const newPostDoc = {

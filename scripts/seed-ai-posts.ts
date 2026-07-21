@@ -25,7 +25,7 @@ Avoid walking straight down the river lane unless your laner has set up a collap
 #### 3. Securing Fangtooth & Objectives
 Following a successful kill, ping your team to immediately transition into **Fangtooth** or invade the enemy jungle camps to deny gold.`,
       category: 'gameplay',
-      tags: ['Jungle', 'Gank', 'Beginner Guide', 'Macro Strategy'],
+      tags: ['Guide', 'Gameplay', 'Jungle'],
       status: 'approved',
       author: 'Predecessor AI Content Engine',
       seoKeywords: ['how to gank predecessor', 'predecessor jungle guide', 'gank tips'],
@@ -54,7 +54,7 @@ Countess relies on relentless burst damage, life steal scaling, and slippery mob
 #### Hero Synergy & Tags
 Best paired with CC initiators like Steel or Dekker. Tagged for **Countess** library integration.`,
       category: 'hero_guide',
-      tags: ['Countess', 'Midlane', 'Assassin', 'Burst'],
+      tags: ['Guide', 'Countess', 'Builds'],
       heroId: 'countess',
       status: 'approved',
       author: 'Predecessor AI Content Engine',
@@ -77,7 +77,7 @@ Boris brings ferocious bruiser durability combined with relentless single-target
 #### Playstyle & Objectives
 Farm jungle camps efficiently while looking for overextended mid laners. In teamfights, act as the frontline disrupter, targeting high-value enemy ADCs.`,
       category: 'hero_guide',
-      tags: ['Boris', 'Jungle', 'Offlane', 'Build Overview'],
+      tags: ['Guide', 'Boris', 'Builds', 'Gameplay'],
       heroId: 'boris',
       status: 'pending', // Seeded as pending so admin review can test approving it!
       author: 'Predecessor AI Content Engine',
@@ -100,7 +100,7 @@ Maximizing XP per minute is the key to out-leveling enemy junglers.
 #### 2. Kiting Camps
 Auto-attack and kite camps towards the next camp boundary to minimize movement downtime between camps!`,
       category: 'gameplay',
-      tags: ['Jungle Clear', 'River Buff', 'Macro', 'Tips'],
+      tags: ['Guide', 'Gameplay'],
       status: 'approved',
       author: 'Predecessor AI Content Engine',
       seoKeywords: ['jungle clear predecessor', 'predecessor jungle route'],

@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { ProfileDashboard } from '@/components/profile/ProfileDashboard'
 import { syncBuildsToCloud, fetchCloudBuilds, saveCloudBuild, deleteCloudBuild, FREE_BUILD_LIMIT, PREMIUM_BUILD_LIMIT, SavedBuild } from '@/lib/sync/build-sync'
+import { syncPostsToCloud, fetchCloudPosts, saveCloudPost, deleteCloudPost, FREE_POST_LIMIT, PREMIUM_POST_LIMIT, SavedPost } from '@/lib/sync/post-sync'
 import { SubscriptionModal } from '@/components/premium/SubscriptionModal'
 import { CommunityBuilds } from '@/components/community/CommunityBuilds'
 
@@ -199,8 +200,10 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   // ── Ability Overview Modal/Drawer ──────────────────────────────────────────
   const [selectedAbility, setSelectedAbility] = useState<any>(null)
 
-  // ── Saved Builds State ─────────────────────────────────────────────────────
+  // ── Saved Builds & Saved Posts State ───────────────────────────────────────
   const [savedBuilds, setSavedBuilds] = useState<any[]>([])
+  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([])
+  const [savedTabSection, setSavedTabSection] = useState<'builds' | 'posts'>('builds')
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [saveBuildName, setSaveBuildName] = useState('')
   const [saveBuildDesc, setSaveBuildDesc] = useState('')
@@ -356,42 +359,122 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
     setMousePos({ x: e.clientX, y: e.clientY })
   }
 
-  // Load saved builds on client mount & sync if user logged in
+  // Load saved builds and saved posts on client mount & sync if user logged in
   useEffect(() => {
-    const loadAndSyncBuilds = async () => {
+    const loadAndSyncUserItems = async () => {
       if (user) {
-        // Fetch saved builds for current authenticated user directly from Firebase
-        const cloudBuilds = await fetchCloudBuilds(user.uid)
+        // Fetch saved builds and saved posts from Firebase
+        const [cloudBuilds, cloudPosts] = await Promise.all([
+          fetchCloudBuilds(user.uid),
+          fetchCloudPosts(user.uid),
+        ])
         
-        // If there were local guest builds in localStorage prior to logging in, sync them up to tier limit
-        const local = localStorage.getItem('predecessor_saved_builds')
-        if (local) {
+        // Sync local guest builds
+        const localB = localStorage.getItem('predecessor_saved_builds')
+        if (localB) {
           try {
-            const localBuilds = JSON.parse(local)
+            const localBuilds = JSON.parse(localB)
             if (localBuilds.length > 0) {
               const maxLimit = isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT
               await syncBuildsToCloud(user.uid, localBuilds, maxLimit)
-              const mergedCloud = await fetchCloudBuilds(user.uid)
-              setSavedBuilds(mergedCloud)
-              localStorage.setItem('predecessor_saved_builds', JSON.stringify(mergedCloud))
-              return
+              const merged = await fetchCloudBuilds(user.uid)
+              setSavedBuilds(merged)
+              localStorage.setItem('predecessor_saved_builds', JSON.stringify(merged))
+            } else {
+              setSavedBuilds(cloudBuilds)
+              localStorage.setItem('predecessor_saved_builds', JSON.stringify(cloudBuilds))
             }
           } catch (e) {
             console.error(e)
           }
+        } else {
+          setSavedBuilds(cloudBuilds)
+          localStorage.setItem('predecessor_saved_builds', JSON.stringify(cloudBuilds))
         }
 
-        setSavedBuilds(cloudBuilds)
-        localStorage.setItem('predecessor_saved_builds', JSON.stringify(cloudBuilds))
+        // Sync local guest posts
+        const localP = localStorage.getItem('predecessor_saved_posts')
+        if (localP) {
+          try {
+            const localPosts = JSON.parse(localP)
+            if (localPosts.length > 0) {
+              const maxLimitP = isPremium ? PREMIUM_POST_LIMIT : FREE_POST_LIMIT
+              await syncPostsToCloud(user.uid, localPosts, maxLimitP)
+              const mergedP = await fetchCloudPosts(user.uid)
+              setSavedPosts(mergedP)
+              localStorage.setItem('predecessor_saved_posts', JSON.stringify(mergedP))
+            } else {
+              setSavedPosts(cloudPosts)
+              localStorage.setItem('predecessor_saved_posts', JSON.stringify(cloudPosts))
+            }
+          } catch (e) {
+            console.error(e)
+          }
+        } else {
+          setSavedPosts(cloudPosts)
+          localStorage.setItem('predecessor_saved_posts', JSON.stringify(cloudPosts))
+        }
       } else {
-        // User logged out / unauthenticated: Clear React state & localStorage so builds do not persist across logouts
-        setSavedBuilds([])
-        localStorage.removeItem('predecessor_saved_builds')
+        // Unauthenticated guest user: Load from LocalStorage if available
+        const localB = localStorage.getItem('predecessor_saved_builds')
+        if (localB) {
+          try { setSavedBuilds(JSON.parse(localB)) } catch (e) {}
+        } else { setSavedBuilds([]) }
+
+        const localP = localStorage.getItem('predecessor_saved_posts')
+        if (localP) {
+          try { setSavedPosts(JSON.parse(localP)) } catch (e) {}
+        } else { setSavedPosts([]) }
       }
     }
     
-    loadAndSyncBuilds()
+    loadAndSyncUserItems()
   }, [user, isPremium])
+
+  // Save / Unsave Post Function with Tier Storage Limits
+  const handleToggleSavePost = async (post: any) => {
+    const isAlreadySaved = savedPosts.some((p) => p.id === post.id)
+    const maxLimit = isPremium ? PREMIUM_POST_LIMIT : FREE_POST_LIMIT
+
+    if (isAlreadySaved) {
+      const updated = savedPosts.filter((p) => p.id !== post.id)
+      setSavedPosts(updated)
+      if (user) {
+        await deleteCloudPost(user.uid, post.id)
+      }
+      localStorage.setItem('predecessor_saved_posts', JSON.stringify(updated))
+    } else {
+      if (savedPosts.length >= maxLimit) {
+        if (!isPremium) {
+          setIsSubscriptionModalOpen(true)
+        } else {
+          alert(`You have reached your limit of ${maxLimit} saved posts.`)
+        }
+        return
+      }
+
+      const newSavedPost: SavedPost = {
+        id: post.id,
+        title: post.title,
+        slug: post.slug || post.id,
+        summary: post.summary,
+        category: post.category || 'gameplay',
+        tags: post.tags || [],
+        author: post.author || 'Predecessor AI Engine',
+        heroId: post.heroId,
+        itemId: post.itemId,
+        createdAt: post.createdAt || new Date().toISOString(),
+        savedAt: new Date().toISOString(),
+      }
+
+      const updated = [newSavedPost, ...savedPosts]
+      setSavedPosts(updated)
+      if (user) {
+        await saveCloudPost(user.uid, newSavedPost)
+      }
+      localStorage.setItem('predecessor_saved_posts', JSON.stringify(updated))
+    }
+  }
 
   // ── Filter Data ────────────────────────────────────────────────────────────
   const filteredHeroes = useMemo(() => {
@@ -2427,41 +2510,50 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
           </div>
         )}
 
-        {/* ── 2. SAVED BUILDS TAB ──────────────────────────────────────────────── */}
+        {/* ── 2. SAVED BUILDS & POSTS TAB ──────────────────────────────────────── */}
         {activeTab === 'saved' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: 0 }}>Your Saved Build Specifications</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '0.85rem', padding: '6px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', color: '#cbd5e1', fontWeight: 'bold' }}>
-                  {savedBuilds.length} / {isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT} Saved Builds {isPremium ? '🌟 (Premium)' : '(Free)'}
-                </span>
-                {!isPremium && (
-                  <button
-                    onClick={() => setIsSubscriptionModalOpen(true)}
-                    style={{ padding: '6px 14px', background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#090d16', border: 'none', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
-                  >
-                    Upgrade to 100 Builds 🚀
-                  </button>
-                )}
+          <div style={{ animation: 'fadeIn 0.3s ease-out', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Header & Sub-Navigation Tabs */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: 0, color: 'white' }}>Your Saved Collection</h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '4px 0 0 0' }}>Access your custom theorycrafting builds and bookmarked AI gameplay guides.</p>
               </div>
-            </div>
-            {!isPremium && (
-              <div style={{ background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.25)', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>🕒</span>
-                  <span style={{ fontSize: '0.85rem', color: '#fef08a' }}>
-                    <strong>Free Tier Notice:</strong> Builds saved on free tier accounts are retained in cloud storage for <strong>14 days</strong>. Upgrade to Premium for permanent cloud storage & up to 100 build slots.
-                  </span>
-                </div>
+
+              {/* Sub-Navigation Buttons */}
+              <div style={{ display: 'flex', gap: '10px' }}>
                 <button
-                  onClick={() => setIsSubscriptionModalOpen(true)}
-                  style={{ padding: '4px 12px', background: 'rgba(234, 179, 8, 0.2)', border: '1px solid #eab308', color: '#fef08a', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  onClick={() => setSavedTabSection('builds')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: savedTabSection === 'builds' ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
                 >
-                  Keep Permanently 🌟
+                  🛠️ Saved Builds ({savedBuilds.length})
+                </button>
+                <button
+                  onClick={() => setSavedTabSection('posts')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: savedTabSection === 'posts' ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  📰 Saved Posts & Guides ({savedPosts.length})
                 </button>
               </div>
-            )}
+            </div>
             {savedBuilds.length === 0 ? (
               <div style={{ padding: '40px', background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', textAlign: 'center', color: '#94a3b8' }}>
                 No saved builds found. Go to the Lab sandbox to construct and save custom theorycrafting builds.
@@ -2924,14 +3016,34 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           e.currentTarget.style.transform = 'translateY(0)'
                         }}
                       >
-                        {/* Header Badges */}
+                        {/* Header Badges & Save Bookmark Button */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '0.7rem', fontWeight: 'bold', background: '#3b82f6', color: 'white', padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
                             {post.category?.replace('_', ' ')}
                           </span>
-                          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                            {new Date(post.createdAt).toLocaleDateString()}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleSavePost(post)
+                              }}
+                              style={{
+                                background: savedPosts.some((sp) => sp.id === post.id) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)',
+                                border: '1px solid ' + (savedPosts.some((sp) => sp.id === post.id) ? '#10b981' : 'rgba(255,255,255,0.1)'),
+                                color: savedPosts.some((sp) => sp.id === post.id) ? '#34d399' : '#94a3b8',
+                                borderRadius: '6px',
+                                padding: '3px 8px',
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {savedPosts.some((sp) => sp.id === post.id) ? '🌟 Saved' : '🔖 Save'}
+                            </button>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                              {new Date(post.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Title */}
@@ -2957,9 +3069,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                             <a
                               href={`/posts/${post.slug}`}
                               onClick={(e) => e.stopPropagation()}
-                              style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 'bold', textDecoration: 'none', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: '4px' }}
+                              style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 'bold', textDecoration: 'none', background: 'rgba(56, 189, 248, 0.1)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.2)' }}
                             >
-                              SEO Page ↗
+                              View Full Post ↗
                             </a>
                             <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 'bold' }}>Quick View →</span>
                           </div>
@@ -3171,11 +3283,26 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        onClick={() => handleToggleSavePost(selectedAiPostModal)}
+                        style={{
+                          padding: '6px 12px',
+                          background: savedPosts.some((sp) => sp.id === selectedAiPostModal.id) ? 'rgba(16, 185, 129, 0.2)' : '#1e293b',
+                          border: '1px solid ' + (savedPosts.some((sp) => sp.id === selectedAiPostModal.id) ? '#10b981' : '#334155'),
+                          color: savedPosts.some((sp) => sp.id === selectedAiPostModal.id) ? '#34d399' : '#f1f5f9',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {savedPosts.some((sp) => sp.id === selectedAiPostModal.id) ? '🌟 Saved Post' : '🔖 Save Post'}
+                      </button>
                       <a
                         href={`/posts/${selectedAiPostModal.slug}`}
                         style={{ padding: '6px 12px', background: '#3b82f6', color: 'white', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 'bold' }}
                       >
-                        Open SEO Link ↗
+                        View Full Post ↗
                       </a>
                       <button
                         onClick={() => setSelectedAiPostModal(null)}

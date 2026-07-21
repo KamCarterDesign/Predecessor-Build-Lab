@@ -29,8 +29,15 @@ export default function AdminDashboard() {
   const [adminPosts, setAdminPosts] = useState<any[]>([])
   const [postFilter, setPostFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [selectedPost, setSelectedPost] = useState<any | null>(null)
+  const [editTagsText, setEditTagsText] = useState<string>('')
   const [loadingPosts, setLoadingPosts] = useState<boolean>(false)
   const [postActionMsg, setPostActionMsg] = useState<string>('')
+
+  useEffect(() => {
+    if (selectedPost) {
+      setEditTagsText(selectedPost.tags ? selectedPost.tags.join(', ') : '')
+    }
+  }, [selectedPost])
 
   useEffect(() => {
     setMounted(true)
@@ -47,12 +54,41 @@ export default function AdminDashboard() {
         setAdminPosts(data.posts)
         if (data.posts.length > 0 && !selectedPost) {
           setSelectedPost(data.posts[0])
+          setEditTagsText(data.posts[0].tags ? data.posts[0].tags.join(', ') : '')
         }
       }
     } catch (err) {
       console.error('Error fetching admin posts:', err)
     } finally {
       setLoadingPosts(false)
+    }
+  }
+
+  const handleSaveTags = async () => {
+    if (!selectedPost) return
+    const parsedTags = editTagsText
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0)
+
+    try {
+      setPostActionMsg(`Saving tags for ${selectedPost.id}...`)
+      const res = await fetch('/api/posts/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_tags', postId: selectedPost.id, tags: parsedTags }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPostActionMsg('✅ Tags updated successfully!')
+        const updatedPost = { ...selectedPost, tags: parsedTags }
+        setSelectedPost(updatedPost)
+        setAdminPosts((prev) => prev.map((p) => (p.id === selectedPost.id ? updatedPost : p)))
+      } else {
+        setPostActionMsg(`❌ Error updating tags: ${data.error}`)
+      }
+    } catch (err: any) {
+      setPostActionMsg(`❌ Error: ${err.message}`)
     }
   }
 
@@ -591,17 +627,51 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Summary & Tags info */}
-                  <div style={{ background: '#0f172a', padding: '12px', borderRadius: '6px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem' }}>
+                  {/* Summary & Tag Editor */}
+                  <div style={{ background: '#0f172a', padding: '14px', borderRadius: '6px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
                     <div><strong>Summary:</strong> {selectedPost.summary}</div>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginTop: '4px' }}>
-                      <strong>Tags:</strong>
-                      {selectedPost.tags?.map((t: string) => (
-                        <span key={t} style={{ padding: '2px 8px', borderRadius: '4px', background: '#1e293b', color: '#38bdf8', fontSize: '0.75rem' }}>
-                          #{t}
-                        </span>
-                      ))}
-                      {selectedPost.heroId && <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#3b82f6', color: 'white', fontSize: '0.75rem' }}>Hero: {selectedPost.heroId}</span>}
+                    
+                    {/* Interactive Tag Editor */}
+                    <div style={{ borderTop: '1px solid #1e293b', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong>🏷️ Assigned Tags (Taxonomy: Guide / [Hero Name] / Builds / Gameplay / Misc):</strong>
+                        <button
+                          onClick={handleSaveTags}
+                          style={{ padding: '4px 10px', background: '#38bdf8', color: '#090d16', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.75rem', cursor: 'pointer' }}
+                        >
+                          💾 Save Tags
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="text"
+                          value={editTagsText}
+                          onChange={(e) => setEditTagsText(e.target.value)}
+                          placeholder="e.g. Guide, Countess, Builds, Gameplay"
+                          style={{ ...inputStyle, fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+
+                      {/* Taxonomy Quick Add Buttons */}
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Quick Add:</span>
+                        {['Guide', 'Builds', 'Gameplay', 'Misc'].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              const current = editTagsText.split(',').map((t) => t.trim()).filter(Boolean)
+                              if (!current.includes(preset)) {
+                                setEditTagsText([...current, preset].join(', '))
+                              }
+                            }}
+                            style={{ padding: '2px 8px', background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
+                          >
+                            + {preset}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
