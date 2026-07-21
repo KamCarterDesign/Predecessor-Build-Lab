@@ -35,6 +35,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { stdout: sf } = await execPromise('npm run sync:feed')
         output = sf
         break
+      case 'sync_patches':
+        const { stdout: sp } = await execPromise('npm run sync:patches')
+        output = sp
+        break
       case 'sync_stats':
         const { stdout: ss } = await execPromise('npm run sync:stats')
         output = ss

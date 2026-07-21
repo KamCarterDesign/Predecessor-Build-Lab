@@ -311,6 +311,7 @@ export default function AdminDashboard() {
             <button disabled={running} onClick={() => triggerAction('sync_items')} style={buttonStyle}>Sync Items & Tiers</button>
             <button disabled={running} onClick={() => triggerAction('sync_eternals')} style={buttonStyle}>Scrape/Sync Eternals</button>
             <button disabled={running} onClick={() => triggerAction('sync_feed')} style={buttonStyle}>Sync News & Reddit Feed</button>
+            <button disabled={running} onClick={() => triggerAction('sync_patches')} style={buttonStyle}>Sync Patch Notes</button>
             <button disabled={running} onClick={() => triggerAction('sync_matches')} style={buttonStyle}>Sync Matches (Incremental)</button>
             <button disabled={running} onClick={() => triggerAction('sync_stats')} style={buttonStyle}>Sync Hero Win Rates</button>
             <button disabled={running} onClick={() => triggerAction('compute_synergy')} style={buttonStyle}>Compute Synergy Scores</button>

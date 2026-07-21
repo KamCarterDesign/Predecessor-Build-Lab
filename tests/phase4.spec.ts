@@ -75,5 +75,32 @@ test.describe('Predecessor Labs - Phase 4 E2E Discovery Verification', () => {
     // Sub-navigate to Patches
     await page.click('button:has-text("patches")')
     await expect(page.locator('text=Predecessor Patch Notes History')).toBeVisible()
+
+    // Verify patch notes cards exist
+    const patchCard = page.locator('.patch-card').first()
+    await expect(patchCard).toBeVisible()
+    
+    // Verify patch card content
+    const patchTitle = patchCard.locator('.patch-card-title')
+    await expect(patchTitle).toBeVisible()
+    const patchDate = patchCard.locator('.patch-card-date')
+    await expect(patchDate).toBeVisible()
+
+    // Click the patch card to open the iframe modal
+    await patchCard.click()
+    
+    // Verify the iframe modal exists
+    const modalHeader = page.locator('text=Patch Notes Viewer')
+    await expect(modalHeader).toBeVisible()
+    const iframe = page.locator('iframe')
+    await expect(iframe).toBeVisible()
+
+    // Verify open in new tab link exists
+    const newTabLink = page.locator('text=Open in New Tab ↗')
+    await expect(newTabLink).toBeVisible()
+
+    // Close the iframe modal
+    await page.locator('button:has-text("×")').click()
+    await expect(modalHeader).not.toBeVisible()
   })
 })

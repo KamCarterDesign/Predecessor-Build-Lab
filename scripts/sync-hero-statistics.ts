@@ -13,7 +13,7 @@ import { getFirestore } from './firebase-admin.js'
 const OMEDA_BASE = 'https://omeda.city'
 
 const TIME_FRAMES = ['1W', '1M'] as const
-const GAME_MODES = ['ranked', 'normal'] as const
+const GAME_MODES = ['ranked', 'pvp'] as const
 
 interface HeroStat {
   hero_id: number | string
