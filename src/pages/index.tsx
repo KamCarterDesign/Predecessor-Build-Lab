@@ -3834,19 +3834,19 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
 
                       {/* Right: Abilities overview & First Item Calculator */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <h4 style={{ fontWeight: 'bold', fontSize: '1rem', color: 'white', margin: 0 }}>Abilities (Click to inspect)</h4>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        <div style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <h4 style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'white', margin: 0 }}>Abilities (Click to inspect)</h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', maxWidth: '280px' }}>
                             {selectedLibraryHero.abilities?.map((ab: any) => (
                               <div
                                 key={ab.key}
                                 onClick={() => setSelectedAbility({ ...ab, heroName: selectedLibraryHero.display_name, heroColor: '#3b82f6' })}
-                                style={{ cursor: 'pointer', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(59, 130, 246, 0.3)', position: 'relative' }}
+                                style={{ cursor: 'pointer', aspectRatio: '1/1', borderRadius: '6px', overflow: 'hidden', border: '2px solid rgba(59, 130, 246, 0.3)', position: 'relative' }}
                                 title={`${selectedLibraryHero.display_name} - ${ab.display_name}`}
                               >
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={ab.image_url} alt={ab.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                <div style={{ position: 'absolute', top: 2, right: 2, background: 'black', borderRadius: '3px', padding: '1px 3px', fontSize: '10px', fontWeight: 'bold' }}>
+                                <div style={{ position: 'absolute', top: 2, right: 2, background: 'black', borderRadius: '3px', padding: '1px 3px', fontSize: '9px', fontWeight: 'bold' }}>
                                   {ab.key}
                                 </div>
                               </div>
