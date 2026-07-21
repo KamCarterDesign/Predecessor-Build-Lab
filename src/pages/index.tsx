@@ -4033,6 +4033,43 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
 
                             return (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+                                {/* Brief Item Overview Card */}
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '12px',
+                                  background: 'rgba(255, 255, 255, 0.02)',
+                                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                                  borderRadius: '8px',
+                                  padding: '10px 12px'
+                                }}>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={libraryCalculatorItem.image_url}
+                                    alt={libraryCalculatorItem.display_name}
+                                    style={{ width: '40px', height: '40px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                                  />
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <strong style={{ fontSize: '0.9rem', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {libraryCalculatorItem.display_name}
+                                      </strong>
+                                      <span style={{ fontSize: '0.7rem', background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(234, 179, 8, 0.3)', fontWeight: 'bold' }}>
+                                        {libraryCalculatorItem.total_price}g
+                                      </span>
+                                    </div>
+                                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {Object.entries(libraryCalculatorItem.stats || {})
+                                        .filter(([_, val]) => val && val !== 0)
+                                        .map(([stat, val]) => {
+                                          const label = stat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                                          return `${label}: +${val}`
+                                        })
+                                        .join(' | ')}
+                                    </span>
+                                  </div>
+                                </div>
+
                                 {/* Stat shifts */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem' }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
