@@ -19,6 +19,13 @@ export function getStatIconHtml(id: string, size: number = 14): string {
     Lifesteal: { color: '#ef4444', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="currentColor"/>' }, // Red droplet
     MagicalLifesteal: { color: '#d946ef', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="currentColor"/><path d="M12 7l-2 5.5h3l-2 5.5 5-7h-3.5z" fill="#ffffff"/>' }, // Purple droplet with lightning
     Omnivamp: { color: '#f43f5e', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="currentColor"/><path d="M4 14c2.5-3 5.5-3 8 0 M20 14c-2.5-3-5.5-3-8 0" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>' }, // Winged droplet
+    MagPen: { color: '#a78bfa', svg: '<path d="M12 2l2.4 5 5.6.8-4 4 1 5.7-5-2.6-5 2.6 1-5.7-4-4 5.6-.8z M5 19l14-14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' }, // Magic Wand / Spark Pen
+    HealShield: { color: '#38bdf8', svg: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>' }, // Shield Cross
+    HealthRegen: { color: '#4ade80', svg: '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v6M9 11h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>' }, // Heart Pulse
+    ManaRegen: { color: '#60a5fa', svg: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v6M9 11h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>' }, // Droplet Pulse
+    MovementSpeed: { color: '#facc15', svg: '<path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" fill="currentColor"/>' }, // Lightning Arrow
+    Tenacity: { color: '#c084fc', svg: '<path d="M12 2v20M5 12h14M5 6l14 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>' }, // Cross Anchor
+    GoldPerSecond: { color: '#fbbf24', svg: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M12 7v10M9 9.5h6 M9 14.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' }, // Coin
   };
 
   const item = mapping[id];

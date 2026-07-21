@@ -48,7 +48,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
         <ul style={{ marginBottom: '32px', color: '#f8fafc', lineHeight: 1.6 }}>
           <li>✨ <strong>AI Build Analysis:</strong> Get detailed insights and critiques on your builds.</li>
           <li>✨ <strong>AI "Explain This":</strong> Ask complex questions about meta, matchups, and more.</li>
-          <li>✨ <strong>Unlimited Cloud Sync:</strong> Save and sync as many builds as you want across devices.</li>
+          <li>✨ <strong>Permanent Cloud Storage:</strong> 100 permanent saved build slots across devices (Free builds expire after 14 days).</li>
           <li>✨ <strong>Ad-Free Experience:</strong> Enjoy the Lab without distractions.</li>
         </ul>
 

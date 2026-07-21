@@ -23,12 +23,103 @@ export default function AdminDashboard() {
   const [templateBody, setTemplateBody] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [templateMessage, setTemplateMessage] = useState('')
-  const [activeTab, setActiveTab] = useState<'sync' | 'emails'>('sync')
+  const [activeTab, setActiveTab] = useState<'sync' | 'emails' | 'ai_posts'>('ai_posts')
+
+  // ── AI Posts Review State ──────────────────────────────────────────────────
+  const [adminPosts, setAdminPosts] = useState<any[]>([])
+  const [postFilter, setPostFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+  const [selectedPost, setSelectedPost] = useState<any | null>(null)
+  const [loadingPosts, setLoadingPosts] = useState<boolean>(false)
+  const [postActionMsg, setPostActionMsg] = useState<string>('')
 
   useEffect(() => {
     setMounted(true)
     fetchTemplates()
+    fetchAdminPosts()
   }, [])
+
+  const fetchAdminPosts = async () => {
+    setLoadingPosts(true)
+    try {
+      const res = await fetch('/api/posts/admin?status=all')
+      const data = await res.json()
+      if (data.posts) {
+        setAdminPosts(data.posts)
+        if (data.posts.length > 0 && !selectedPost) {
+          setSelectedPost(data.posts[0])
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching admin posts:', err)
+    } finally {
+      setLoadingPosts(false)
+    }
+  }
+
+  const handleUpdatePostStatus = async (postId: string, status: 'approved' | 'rejected') => {
+    try {
+      setPostActionMsg(`Updating post ${postId}...`)
+      const res = await fetch('/api/posts/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_status', postId, status }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPostActionMsg(`✅ Post status set to ${status}!`)
+        await fetchAdminPosts()
+        if (selectedPost && selectedPost.id === postId) {
+          setSelectedPost({ ...selectedPost, status })
+        }
+      } else {
+        setPostActionMsg(`❌ Error: ${data.error}`)
+      }
+    } catch (err: any) {
+      setPostActionMsg(`❌ Error updating status: ${err.message}`)
+    }
+  }
+
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('Are you sure you want to delete this post?')) return
+    try {
+      setPostActionMsg(`Deleting post ${postId}...`)
+      const res = await fetch('/api/posts/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', postId }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPostActionMsg('✅ Post deleted successfully!')
+        setSelectedPost(null)
+        await fetchAdminPosts()
+      } else {
+        setPostActionMsg(`❌ Error: ${data.error}`)
+      }
+    } catch (err: any) {
+      setPostActionMsg(`❌ Delete failed: ${err.message}`)
+    }
+  }
+
+  const handleSeedPosts = async () => {
+    try {
+      setPostActionMsg('Seeding sample AI posts...')
+      const res = await fetch('/api/posts/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'seed_samples' }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPostActionMsg(`✅ Seeded ${data.message || 'sample posts'}`)
+        await fetchAdminPosts()
+      } else {
+        setPostActionMsg(`❌ Error seeding: ${data.error}`)
+      }
+    } catch (err: any) {
+      setPostActionMsg(`❌ Error: ${err.message}`)
+    }
+  }
 
   const fetchTemplates = async () => {
     try {
@@ -147,6 +238,17 @@ export default function AdminDashboard() {
 
       {/* ADMIN TABS */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+        <button
+          onClick={() => setActiveTab('ai_posts')}
+          style={{ padding: '8px 16px', background: activeTab === 'ai_posts' ? '#3b82f6' : '#1e293b', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          🤖 AI Content & n8n Moderation
+          {adminPosts.filter((p) => p.status === 'pending').length > 0 && (
+            <span style={{ background: '#ef4444', color: 'white', padding: '2px 6px', borderRadius: '10px', fontSize: '0.75rem' }}>
+              {adminPosts.filter((p) => p.status === 'pending').length}
+            </span>
+          )}
+        </button>
         <button
           onClick={() => setActiveTab('sync')}
           style={{ padding: '8px 16px', background: activeTab === 'sync' ? '#3b82f6' : '#1e293b', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
@@ -305,16 +407,213 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
 
-            {/* LIVE PREVIEW PANE */}
-            <div style={{ background: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', color: '#facc15' }}>👁 Live Email Preview</h3>
-              <div style={{ background: '#ffffff', color: '#111827', padding: '20px', borderRadius: '6px', border: '1px solid #e2e8f0', fontFamily: 'sans-serif' }}>
-                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '12px' }}>
-                  <strong>Subject:</strong> {previewSubject}
+      {/* TAB 3: AI POSTS MODERATION & N8N HUB */}
+      {activeTab === 'ai_posts' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Action Header & Notifications */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1e293b', padding: '16px', borderRadius: '8px', border: '1px solid #334155' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#38bdf8' }}>AI Content Engine & Approval Workflow</h2>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                Review AI-generated SEO posts (n8n integration). Approved posts go live on the Feed & Library.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={handleSeedPosts} style={{ padding: '8px 14px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                🌱 Seed Sample AI Posts
+              </button>
+              <button onClick={fetchAdminPosts} style={{ padding: '8px 14px', background: '#334155', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                🔄 Refresh Queue
+              </button>
+            </div>
+          </div>
+
+          {postActionMsg && (
+            <div style={{ padding: '12px', background: postActionMsg.includes('✅') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', fontSize: '0.85rem' }}>
+              {postActionMsg}
+            </div>
+          )}
+
+          {/* n8n Webhook Endpoint Guide Card */}
+          <div style={{ background: '#090d16', padding: '16px', borderRadius: '8px', border: '1px solid #1e293b' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#facc15', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ⚡ n8n / AI Workflow Webhook Integration URL
+            </h3>
+            <div style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div><strong>POST Webhook Endpoint:</strong> <code style={{ background: '#1e293b', padding: '3px 8px', borderRadius: '4px', color: '#38bdf8' }}>POST /api/webhooks/n8n-post</code></div>
+              <div><strong>Header (optional secret):</strong> <code style={{ background: '#1e293b', padding: '3px 8px', borderRadius: '4px', color: '#38bdf8' }}>x-api-key: predecessor_n8n_secret</code></div>
+              <div><strong>Sample JSON Payload:</strong></div>
+              <pre style={{ margin: 0, padding: '10px', background: '#020617', borderRadius: '6px', fontSize: '0.75rem', overflowX: 'auto', color: '#a7f3d0' }}>
+{`{
+  "title": "Countess Beginners Guide",
+  "summary": "Master Countess midlane burst combos...",
+  "content": "Full Markdown/HTML guide text...",
+  "category": "hero_guide",
+  "tags": ["Countess", "Midlane", "Burst"],
+  "heroId": "countess",
+  "author": "n8n AI Engine"
+}`}
+              </pre>
+            </div>
+          </div>
+
+          {/* Status Filter Bar */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {(['all', 'pending', 'approved', 'rejected'] as const).map((st) => {
+              const count = adminPosts.filter((p) => st === 'all' || p.status === st).length
+              return (
+                <button
+                  key={st}
+                  onClick={() => setPostFilter(st)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: postFilter === st ? '#3b82f6' : '#1e293b',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {st} ({count})
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Main Grid: Left Post List | Right Selected Post Details & Review */}
+          <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '20px' }}>
+            {/* Left Posts List */}
+            <div style={{ background: '#1e293b', padding: '12px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '650px', overflowY: 'auto' }}>
+              {loadingPosts ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>Loading posts...</div>
+              ) : adminPosts.filter((p) => postFilter === 'all' || p.status === postFilter).length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                  No posts found in `{postFilter}` state.
                 </div>
-                <div dangerouslySetInnerHTML={{ __html: previewBody }} />
-              </div>
+              ) : (
+                adminPosts
+                  .filter((p) => postFilter === 'all' || p.status === postFilter)
+                  .map((post) => {
+                    const isSelected = selectedPost?.id === post.id
+                    return (
+                      <div
+                        key={post.id}
+                        onClick={() => setSelectedPost(post)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          background: isSelected ? '#3b82f6' : '#0f172a',
+                          border: '1px solid #334155',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              fontWeight: 'bold',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              textTransform: 'uppercase',
+                              background: post.status === 'approved' ? '#10b981' : post.status === 'rejected' ? '#ef4444' : '#f59e0b',
+                              color: 'white',
+                            }}
+                          >
+                            {post.status}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: isSelected ? '#e0f2fe' : '#94a3b8' }}>
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'white', lineClamp: 2, WebkitLineClamp: 2, overflow: 'hidden' }}>
+                          {post.title}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: isSelected ? '#dbeafe' : '#94a3b8' }}>
+                          Cat: {post.category} • Author: {post.author}
+                        </div>
+                      </div>
+                    )
+                  })
+              )}
+            </div>
+
+            {/* Right Post Detail & Approval Pane */}
+            <div style={{ background: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {!selectedPost ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                  Select a post from the list on the left to review, approve, or reject.
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+                    <div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ padding: '3px 8px', borderRadius: '4px', background: selectedPost.status === 'approved' ? '#10b981' : selectedPost.status === 'rejected' ? '#ef4444' : '#f59e0b', color: 'white', fontWeight: 'bold', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                          Status: {selectedPost.status}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Category: {selectedPost.category}</span>
+                      </div>
+                      <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'white' }}>{selectedPost.title}</h2>
+                    </div>
+
+                    {/* Moderation Controls */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => handleUpdatePostStatus(selectedPost.id, 'approved')}
+                        disabled={selectedPost.status === 'approved'}
+                        style={{ padding: '8px 14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        ✅ Approve Post
+                      </button>
+                      <button
+                        onClick={() => handleUpdatePostStatus(selectedPost.id, 'rejected')}
+                        disabled={selectedPost.status === 'rejected'}
+                        style={{ padding: '8px 14px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        ❌ Reject Post
+                      </button>
+                      <button
+                        onClick={() => handleDeletePost(selectedPost.id)}
+                        style={{ padding: '8px 12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Summary & Tags info */}
+                  <div style={{ background: '#0f172a', padding: '12px', borderRadius: '6px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem' }}>
+                    <div><strong>Summary:</strong> {selectedPost.summary}</div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginTop: '4px' }}>
+                      <strong>Tags:</strong>
+                      {selectedPost.tags?.map((t: string) => (
+                        <span key={t} style={{ padding: '2px 8px', borderRadius: '4px', background: '#1e293b', color: '#38bdf8', fontSize: '0.75rem' }}>
+                          #{t}
+                        </span>
+                      ))}
+                      {selectedPost.heroId && <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#3b82f6', color: 'white', fontSize: '0.75rem' }}>Hero: {selectedPost.heroId}</span>}
+                    </div>
+                  </div>
+
+                  {/* Rendered Post Content Body */}
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem', color: '#94a3b8' }}>Post Content Body</h4>
+                    <div style={{ background: '#020617', padding: '16px', borderRadius: '6px', border: '1px solid #1e293b', fontSize: '0.85rem', color: '#e2e8f0', whiteSpace: 'pre-wrap', maxHeight: '350px', overflowY: 'auto' }}>
+                      {selectedPost.content}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

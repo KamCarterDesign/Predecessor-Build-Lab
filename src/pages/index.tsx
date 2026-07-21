@@ -8,7 +8,8 @@ import { parseDescription, getStatIconHtml } from '@/lib/utils/description-parse
 import { useAuth } from '@/lib/auth-context'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { ProfileDashboard } from '@/components/profile/ProfileDashboard'
-import { syncBuildsToCloud, fetchCloudBuilds } from '@/lib/sync/build-sync'
+import { syncBuildsToCloud, fetchCloudBuilds, saveCloudBuild, deleteCloudBuild, FREE_BUILD_LIMIT, PREMIUM_BUILD_LIMIT, SavedBuild } from '@/lib/sync/build-sync'
+import { SubscriptionModal } from '@/components/premium/SubscriptionModal'
 import { CommunityBuilds } from '@/components/community/CommunityBuilds'
 
 interface DashboardProps {
@@ -71,6 +72,72 @@ const dnaTooltips: Record<string, string> = {
   objective_damage: "Objective Damage represents the capability to deal increased damage to monsters, minions, or structures. It sums flat percentage increases provided by hero abilities, items, or Eternals.",
   sustain: "Sustain measures health regeneration, shields, healing abilities, and lifesteal or omnivamp sources from your kit and items.",
   utility: "Utility represents crowd control capabilities, including stuns, slows, silences, pulls, and roots from abilities and item passives.",
+}
+
+const STAT_PRIORITY: Record<string, number> = {
+  physical_power: 1,
+  magical_power: 2,
+  energy_power: 2,
+  max_health: 3,
+  health: 3,
+  physical_armor: 4,
+  magical_armor: 5,
+  ability_haste: 6,
+  physical_penetration: 7,
+  magical_penetration: 8,
+  critical_chance: 9,
+  crit_chance: 9,
+  attack_speed: 10,
+  lifesteal: 11,
+  magical_lifesteal: 12,
+  omnivamp: 13,
+  heal_shield_increase: 14,
+  max_mana: 15,
+  mana: 15,
+  health_regeneration: 16,
+  base_health_regeneration: 16,
+  mana_regeneration: 17,
+  base_mana_regeneration: 17,
+  movement_speed: 18,
+  tenacity: 19,
+  gold_per_second: 20,
+}
+
+export function sortItemStats(stats: Record<string, number> = {}): [string, number][] {
+  return Object.entries(stats)
+    .filter(([_, val]) => val !== 0 && val !== null && val !== undefined)
+    .sort(([keyA], [keyB]) => {
+      const priorityA = STAT_PRIORITY[keyA] ?? 99
+      const priorityB = STAT_PRIORITY[keyB] ?? 99
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB
+      }
+      return keyA.localeCompare(keyB)
+    })
+}
+
+function getStatIconId(statKey: string): string {
+  if (statKey.includes('physical_power')) return 'ADIconOrange'
+  if (statKey.includes('magical_power') || statKey.includes('energy_power')) return 'APIconBlue'
+  if (statKey.includes('health_regeneration') || statKey.includes('base_health_regeneration')) return 'HealthRegen'
+  if (statKey.includes('health') || statKey.includes('max_health')) return 'HealthIconGreen'
+  if (statKey.includes('physical_armor')) return 'ArmorOrange'
+  if (statKey.includes('magical_armor')) return 'MRIcon'
+  if (statKey.includes('haste')) return 'AbilityHaste'
+  if (statKey.includes('physical_penetration')) return 'PhysPen'
+  if (statKey.includes('magical_penetration')) return 'MagPen'
+  if (statKey.includes('crit')) return 'CritIconGold'
+  if (statKey.includes('attack_speed')) return 'ASIconOrange'
+  if (statKey.includes('magical_lifesteal')) return 'MagicalLifesteal'
+  if (statKey.includes('lifesteal')) return 'Lifesteal'
+  if (statKey.includes('omnivamp')) return 'Omnivamp'
+  if (statKey.includes('heal_shield')) return 'HealShield'
+  if (statKey.includes('mana_regeneration') || statKey.includes('base_mana_regeneration')) return 'ManaRegen'
+  if (statKey.includes('mana') || statKey.includes('max_mana')) return 'ManaBlue'
+  if (statKey.includes('movement_speed')) return 'MovementSpeed'
+  if (statKey.includes('tenacity')) return 'Tenacity'
+  if (statKey.includes('gold_per_second')) return 'GoldPerSecond'
+  return 'BonusDamage'
 }
 
 export default function Dashboard({ heroes = [], items = [], eternals = [], feedItems = [], metaSnapshots = [], metaNarratives = [] }: DashboardProps) {
@@ -138,6 +205,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   const [saveBuildName, setSaveBuildName] = useState('')
   const [saveBuildDesc, setSaveBuildDesc] = useState('')
   const [isPendingSaveAfterAuth, setIsPendingSaveAfterAuth] = useState(false)
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false)
   // ── Global Search States ───────────────────────────────────────────────────
   const [globalSearchQuery, setGlobalSearchQuery] = useState('')
   const [showGlobalSearchResults, setShowGlobalSearchResults] = useState(false)
@@ -149,11 +217,52 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   const [selectedLibraryEternal, setSelectedLibraryEternal] = useState<EternalDoc | null>(null)
   const [libraryHeroLevel, setLibraryHeroLevel] = useState<number>(1)
 
-  // ── Feed States ─────────────────────────────────────────────────────────────
-  const [feedFilter, setFeedFilter] = useState<'all' | 'official' | 'reddit' | 'youtube'>('all')
+  // ── Revamped Feed States ───────────────────────────────────────────────────
+  const [feedFilter, setFeedFilter] = useState<'all' | 'official' | 'ai_posts' | 'youtube'>('all')
+  const [ugcVideos, setUgcVideos] = useState<any[]>([])
+  const [loadingUgc, setLoadingUgc] = useState<boolean>(false)
+  const [selectedUgcVideoId, setSelectedUgcVideoId] = useState<string | null>(null)
+  
+  const [aiPosts, setAiPosts] = useState<any[]>([])
+  const [loadingAiPosts, setLoadingAiPosts] = useState<boolean>(false)
+  const [aiCategoryFilter, setAiCategoryFilter] = useState<string>('all')
+  const [selectedAiPostModal, setSelectedAiPostModal] = useState<any | null>(null)
+
+  const [officialNewsItems, setOfficialNewsItems] = useState<any[]>([])
   const [loadedFeedItems, setLoadedFeedItems] = useState<any[]>(feedItems)
   const [loadingMoreFeed, setLoadingMoreFeed] = useState(false)
   const [hasMoreFeed, setHasMoreFeed] = useState(true)
+
+  // Fetch UGC YouTube Videos, AI Posts, and Official News on mount or filter change
+  useEffect(() => {
+    async function loadFeedData() {
+      setLoadingUgc(true)
+      setLoadingAiPosts(true)
+      try {
+        const [ytRes, postsRes, officialRes] = await Promise.all([
+          fetch('/api/youtube/playlist'),
+          fetch('/api/posts'),
+          fetch('/api/feed?source=official&limit=20'),
+        ])
+        
+        const ytData = await ytRes.json()
+        if (ytData.videos) setUgcVideos(ytData.videos)
+
+        const postsData = await postsRes.json()
+        if (postsData.posts) setAiPosts(postsData.posts)
+
+        const officialData = await officialRes.json()
+        if (officialData.items) setOfficialNewsItems(officialData.items)
+      } catch (err) {
+        console.error('Error fetching revamped feed data:', err)
+      } finally {
+        setLoadingUgc(false)
+        setLoadingAiPosts(false)
+      }
+    }
+
+    loadFeedData()
+  }, [])
 
   const maxFeedLimit = feedFilter === 'all' ? 150 : 50
 
@@ -247,33 +356,39 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   // Load saved builds on client mount & sync if user logged in
   useEffect(() => {
     const loadAndSyncBuilds = async () => {
-      let localBuilds: any[] = []
-      const local = localStorage.getItem('predecessor_saved_builds')
-      if (local) {
-        try {
-          localBuilds = JSON.parse(local)
-          setSavedBuilds(localBuilds)
-        } catch (e) {
-          console.error(e)
-        }
-      }
-
       if (user) {
-        // Sync local to cloud
-        if (localBuilds.length > 0) {
-          await syncBuildsToCloud(user.uid, localBuilds)
-        }
-        // Fetch latest from cloud
+        // Fetch saved builds for current authenticated user directly from Firebase
         const cloudBuilds = await fetchCloudBuilds(user.uid)
-        if (cloudBuilds.length > 0) {
-          setSavedBuilds(cloudBuilds)
-          localStorage.setItem('predecessor_saved_builds', JSON.stringify(cloudBuilds))
+        
+        // If there were local guest builds in localStorage prior to logging in, sync them up to tier limit
+        const local = localStorage.getItem('predecessor_saved_builds')
+        if (local) {
+          try {
+            const localBuilds = JSON.parse(local)
+            if (localBuilds.length > 0) {
+              const maxLimit = isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT
+              await syncBuildsToCloud(user.uid, localBuilds, maxLimit)
+              const mergedCloud = await fetchCloudBuilds(user.uid)
+              setSavedBuilds(mergedCloud)
+              localStorage.setItem('predecessor_saved_builds', JSON.stringify(mergedCloud))
+              return
+            }
+          } catch (e) {
+            console.error(e)
+          }
         }
+
+        setSavedBuilds(cloudBuilds)
+        localStorage.setItem('predecessor_saved_builds', JSON.stringify(cloudBuilds))
+      } else {
+        // User logged out / unauthenticated: Clear React state & localStorage so builds do not persist across logouts
+        setSavedBuilds([])
+        localStorage.removeItem('predecessor_saved_builds')
       }
     }
     
     loadAndSyncBuilds()
-  }, [user])
+  }, [user, isPremium])
 
   // ── Filter Data ────────────────────────────────────────────────────────────
   const filteredHeroes = useMemo(() => {
@@ -321,16 +436,26 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
       let matchesStats = true
       if (activeStatFilters.length > 0) {
         for (const stat of activeStatFilters) {
-          if (stat === 'magical_power' && !((item.stats.magical_power || 0) > 0 || (item.stats.energy_power || 0) > 0)) matchesStats = false;
           if (stat === 'physical_power' && !((item.stats.physical_power || 0) > 0)) matchesStats = false;
-          if (stat === 'omnivamp' && !((item.stats.omnivamp || 0) > 0)) matchesStats = false;
-          if (stat === 'lifesteal' && !((item.stats.lifesteal || 0) > 0)) matchesStats = false;
-          if (stat === 'magical_lifesteal' && !((item.stats.magical_lifesteal || 0) > 0)) matchesStats = false;
+          if (stat === 'magical_power' && !((item.stats.magical_power || 0) > 0 || (item.stats.energy_power || 0) > 0)) matchesStats = false;
           if (stat === 'health' && !((item.stats.max_health || 0) > 0 || (item.stats.health || 0) > 0)) matchesStats = false;
+          if (stat === 'ability_haste' && !((item.stats.ability_haste || 0) > 0)) matchesStats = false;
           if (stat === 'physical_armor' && !((item.stats.physical_armor || 0) > 0)) matchesStats = false;
           if (stat === 'magical_armor' && !((item.stats.magical_armor || 0) > 0)) matchesStats = false;
-          if (stat === 'ability_haste' && !((item.stats.ability_haste || 0) > 0)) matchesStats = false;
+          if (stat === 'physical_penetration' && !((item.stats.physical_penetration || 0) > 0)) matchesStats = false;
+          if (stat === 'magical_penetration' && !((item.stats.magical_penetration || 0) > 0)) matchesStats = false;
           if (stat === 'crit_chance' && !((item.stats.crit_chance || item.stats.critical_chance || 0) > 0)) matchesStats = false;
+          if (stat === 'attack_speed' && !((item.stats.attack_speed || 0) > 0)) matchesStats = false;
+          if (stat === 'lifesteal' && !((item.stats.lifesteal || 0) > 0)) matchesStats = false;
+          if (stat === 'magical_lifesteal' && !((item.stats.magical_lifesteal || 0) > 0)) matchesStats = false;
+          if (stat === 'omnivamp' && !((item.stats.omnivamp || 0) > 0)) matchesStats = false;
+          if (stat === 'heal_shield_increase' && !((item.stats.heal_shield_increase || 0) > 0)) matchesStats = false;
+          if (stat === 'max_mana' && !((item.stats.max_mana || item.stats.mana || 0) > 0)) matchesStats = false;
+          if (stat === 'health_regeneration' && !((item.stats.health_regeneration || item.stats.base_health_regeneration || 0) > 0)) matchesStats = false;
+          if (stat === 'mana_regeneration' && !((item.stats.mana_regeneration || item.stats.base_mana_regeneration || 0) > 0)) matchesStats = false;
+          if (stat === 'movement_speed' && !((item.stats.movement_speed || 0) > 0)) matchesStats = false;
+          if (stat === 'tenacity' && !((item.stats.tenacity || 0) > 0)) matchesStats = false;
+          if (stat === 'gold_per_second' && !((item.stats.gold_per_second || 0) > 0)) matchesStats = false;
         }
       }
 
@@ -579,15 +704,23 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   }
 
   // ── Save Build Handler ─────────────────────────────────────────────────────
-  const performSaveBuild = (name: string, description: string) => {
+  const performSaveBuild = async (name: string, description: string) => {
     if (!selectedHero || !name) return
+
+    const maxLimit = isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT
+    if (savedBuilds.length >= maxLimit) {
+      alert(`You have reached your limit of ${maxLimit} saved builds. ${!isPremium ? 'Upgrade to Premium for up to 100 builds!' : ''}`)
+      return
+    }
 
     const goldA = buildItems.reduce((acc, curr) => acc + curr.total_price, 0) + (buildCrest?.total_price || 0)
     const goldB = selectedHeroB
       ? buildItemsB.reduce((acc, curr) => acc + curr.total_price, 0) + (buildCrestB?.total_price || 0)
       : 0
 
-    const newBuild: any = {
+    const nowIso = new Date().toISOString()
+
+    const newBuild: SavedBuild = {
       id: Date.now().toString(),
       name: name,
       description: description,
@@ -600,7 +733,8 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
       crest: buildCrest?.slug || null,
       eternal: buildEternal?.slug || null,
       gold: goldA,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
+      updatedAt: nowIso,
     }
 
     // Include Hero B Specs if selectedHeroB is active
@@ -621,7 +755,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
     localStorage.setItem('predecessor_saved_builds', JSON.stringify(updated))
 
     if (user) {
-      syncBuildsToCloud(user.uid, updated)
+      await saveCloudBuild(user.uid, newBuild)
     }
 
     setIsSaveModalOpen(false)
@@ -652,12 +786,12 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
     }
   }, [user, isPendingSaveAfterAuth])
 
-  const deleteSavedBuild = (id: string) => {
+  const deleteSavedBuild = async (id: string) => {
     const updated = savedBuilds.filter((b) => b.id !== id)
     setSavedBuilds(updated)
     localStorage.setItem('predecessor_saved_builds', JSON.stringify(updated))
     if (user) {
-      syncBuildsToCloud(user.uid, updated)
+      await deleteCloudBuild(user.uid, id)
     }
   }
 
@@ -1509,6 +1643,66 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                         </div>
                       </div>
                     )}
+
+                    {/* Meta Alignment Indicator */}
+                    {((activeBuild === 'A' ? selectedHero : selectedHeroB)?.popular_build) && (
+                      <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+                        {(() => {
+                          const currentHero = activeBuild === 'A' ? selectedHero : selectedHeroB;
+                          const currentBuildItems = activeBuild === 'A' ? buildItems : buildItemsB;
+                          const currentCrest = activeBuild === 'A' ? buildCrest : buildCrestB;
+                          const currentEternal = activeBuild === 'A' ? buildEternal : buildEternalB;
+                          const pop = currentHero?.popular_build;
+                          if (!pop) return null;
+
+                          const matchingItems = currentBuildItems.filter(item => pop.item_slugs?.includes(item.slug)).length;
+                          const crestMatches = currentCrest && pop.crest_slug === currentCrest.slug;
+                          const eternalMatches = currentEternal && pop.eternal_slug && currentEternal.slug.toLowerCase().includes(pop.eternal_slug.toLowerCase());
+
+                          let statusText = '🔴 Off-Meta / Experimental';
+                          let statusBg = 'rgba(239, 68, 68, 0.1)';
+                          let statusBorder = 'rgba(239, 68, 68, 0.3)';
+                          let statusColor = '#f87171';
+
+                          if (matchingItems >= 5) {
+                            statusText = '🟢 Core Meta Build';
+                            statusBg = 'rgba(16, 185, 129, 0.1)';
+                            statusBorder = 'rgba(16, 185, 129, 0.3)';
+                            statusColor = '#34d399';
+                          } else if (matchingItems >= 3) {
+                            statusText = '🟡 Close to Meta';
+                            statusBg = 'rgba(234, 179, 8, 0.1)';
+                            statusBorder = 'rgba(234, 179, 8, 0.3)';
+                            statusColor = '#facc15';
+                          } else if (matchingItems >= 1) {
+                            statusText = '🟠 Partial Meta';
+                            statusBg = 'rgba(249, 115, 22, 0.1)';
+                            statusBorder = 'rgba(249, 115, 22, 0.3)';
+                            statusColor = '#fb923c';
+                          }
+
+                          return (
+                            <div style={{ background: statusBg, border: `1px solid ${statusBorder}`, borderRadius: '10px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: statusColor }}>{statusText}</span>
+                                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({matchingItems}/{pop.item_slugs?.length || 6} items match pred.gg meta)</span>
+                                </div>
+                                {pop.win_rate && (
+                                  <span style={{ fontSize: '0.75rem', background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.4)', color: '#60a5fa', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                    Meta WR: {pop.win_rate}% ({pop.match_count?.toLocaleString() || 0} matches)
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                                <span>Crest Match: {crestMatches ? '✅ Yes' : currentCrest ? '❌ No' : '⚪ Not Selected'}</span>
+                                <span>Eternal Match: {eternalMatches ? '✅ Yes' : currentEternal ? '❌ No' : '⚪ Not Selected'}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
 
                   {/* ITEM / CREST / ETERNAL BROWSER PANEL */}
@@ -1584,16 +1778,29 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                         {/* Stat Filters */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                           {[
-                            { key: 'ability_haste', label: 'Ability Haste', iconId: 'AbilityHaste' },
-                            { key: 'crit_chance', label: 'Critical Chance', iconId: 'CritIconGold' },
-                            { key: 'health', label: 'Health', iconId: 'HealthIconGreen' },
-                            { key: 'lifesteal', label: 'Lifesteal', iconId: 'Lifesteal' },
-                            { key: 'magical_armor', label: 'Magical Armor', iconId: 'MRIcon' },
-                            { key: 'magical_lifesteal', label: 'Magical Lifesteal', iconId: 'MagicalLifesteal' },
-                            { key: 'magical_power', label: 'Magical Power', iconId: 'APIconBlue' },
-                            { key: 'omnivamp', label: 'Omnivamp', iconId: 'Omnivamp' },
-                            { key: 'physical_armor', label: 'Physical Armor', iconId: 'ArmorOrange' },
+                            // FIRST 4 POSITIONS (Physical Power, Magical Power, Health, Ability Haste)
                             { key: 'physical_power', label: 'Physical Power', iconId: 'ADIconOrange' },
+                            { key: 'magical_power', label: 'Magical Power', iconId: 'APIconBlue' },
+                            { key: 'health', label: 'Health', iconId: 'HealthIconGreen' },
+                            { key: 'ability_haste', label: 'Ability Haste', iconId: 'AbilityHaste' },
+
+                            // ALL REMAINING STAT FILTERS
+                            { key: 'physical_armor', label: 'Physical Armor', iconId: 'ArmorOrange' },
+                            { key: 'magical_armor', label: 'Magical Armor', iconId: 'MRIcon' },
+                            { key: 'physical_penetration', label: 'Physical Penetration', iconId: 'PhysPen' },
+                            { key: 'magical_penetration', label: 'Magical Penetration', iconId: 'MagPen' },
+                            { key: 'crit_chance', label: 'Critical Chance', iconId: 'CritIconGold' },
+                            { key: 'attack_speed', label: 'Attack Speed', iconId: 'ASIconOrange' },
+                            { key: 'lifesteal', label: 'Lifesteal', iconId: 'Lifesteal' },
+                            { key: 'magical_lifesteal', label: 'Magical Lifesteal', iconId: 'MagicalLifesteal' },
+                            { key: 'omnivamp', label: 'Omnivamp', iconId: 'Omnivamp' },
+                            { key: 'heal_shield_increase', label: 'Heal & Shield Power', iconId: 'HealShield' },
+                            { key: 'max_mana', label: 'Mana', iconId: 'ManaBlue' },
+                            { key: 'health_regeneration', label: 'Health Regen', iconId: 'HealthRegen' },
+                            { key: 'mana_regeneration', label: 'Mana Regen', iconId: 'ManaRegen' },
+                            { key: 'movement_speed', label: 'Movement Speed', iconId: 'MovementSpeed' },
+                            { key: 'tenacity', label: 'Tenacity', iconId: 'Tenacity' },
+                            { key: 'gold_per_second', label: 'Gold / Sec', iconId: 'GoldPerSecond' },
                           ].map((stat) => {
                             const isActive = activeStatFilters.includes(stat.key);
                             return (
@@ -1661,21 +1868,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   </div>
                                 </div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
-                                  {Object.entries(item.stats || {}).map(([statKey, val]) => {
-                                    if (!val) return null;
-                                    const statLabel = statKey.replace('_', ' ');
-                                    let iconId = 'BonusDamage';
-                                    if (statKey.includes('health')) iconId = 'HealthIconGreen';
-                                    else if (statKey.includes('mana')) iconId = 'ManaBlue';
-                                    else if (statKey.includes('physical_power')) iconId = 'ADIconOrange';
-                                    else if (statKey.includes('magical_power') || statKey.includes('energy_power')) iconId = 'APIconBlue';
-                                    else if (statKey.includes('physical_armor')) iconId = 'ArmorOrange';
-                                    else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
-                                    else if (statKey.includes('haste')) iconId = 'AbilityHaste';
-                                    else if (statKey.includes('crit')) iconId = 'CritIconGold';
-                                    else if (statKey.includes('magical_lifesteal')) iconId = 'MagicalLifesteal';
-                                    else if (statKey.includes('lifesteal')) iconId = 'Lifesteal';
-                                    else if (statKey.includes('omnivamp')) iconId = 'Omnivamp';
+                                  {sortItemStats(item.stats || {}).map(([statKey, val]) => {
+                                    const statLabel = statKey.replace(/_/g, ' ');
+                                    const iconId = getStatIconId(statKey);
                                     return (
                                       <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
                                         <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
@@ -1736,21 +1931,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                                   </div>
                                 </div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
-                                  {Object.entries(crestItem.stats || {}).map(([statKey, val]) => {
-                                    if (!val) return null;
-                                    const statLabel = statKey.replace('_', ' ');
-                                    let iconId = 'BonusDamage';
-                                    if (statKey.includes('health')) iconId = 'HealthIconGreen';
-                                    else if (statKey.includes('mana')) iconId = 'ManaBlue';
-                                    else if (statKey.includes('physical_power')) iconId = 'ADIconOrange';
-                                    else if (statKey.includes('magical_power') || statKey.includes('energy_power')) iconId = 'APIconBlue';
-                                    else if (statKey.includes('physical_armor')) iconId = 'ArmorOrange';
-                                    else if (statKey.includes('magical_armor')) iconId = 'MRIcon';
-                                    else if (statKey.includes('haste')) iconId = 'AbilityHaste';
-                                    else if (statKey.includes('crit')) iconId = 'CritIconGold';
-                                    else if (statKey.includes('magical_lifesteal')) iconId = 'MagicalLifesteal';
-                                    else if (statKey.includes('lifesteal')) iconId = 'Lifesteal';
-                                    else if (statKey.includes('omnivamp')) iconId = 'Omnivamp';
+                                  {sortItemStats(crestItem.stats || {}).map(([statKey, val]) => {
+                                    const statLabel = statKey.replace(/_/g, ' ');
+                                    const iconId = getStatIconId(statKey);
                                     return (
                                       <span key={statKey} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
                                         <span style={{ display: 'flex', alignItems: 'center' }} dangerouslySetInnerHTML={{ __html: getStatIconHtml(iconId, 12) }} />
@@ -2244,7 +2427,38 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
         {/* ── 2. SAVED BUILDS TAB ──────────────────────────────────────────────── */}
         {activeTab === 'saved' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '20px' }}>Your Saved Build Specifications</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: 0 }}>Your Saved Build Specifications</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '0.85rem', padding: '6px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', color: '#cbd5e1', fontWeight: 'bold' }}>
+                  {savedBuilds.length} / {isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT} Saved Builds {isPremium ? '🌟 (Premium)' : '(Free)'}
+                </span>
+                {!isPremium && (
+                  <button
+                    onClick={() => setIsSubscriptionModalOpen(true)}
+                    style={{ padding: '6px 14px', background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#090d16', border: 'none', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    Upgrade to 100 Builds 🚀
+                  </button>
+                )}
+              </div>
+            </div>
+            {!isPremium && (
+              <div style={{ background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.25)', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🕒</span>
+                  <span style={{ fontSize: '0.85rem', color: '#fef08a' }}>
+                    <strong>Free Tier Notice:</strong> Builds saved on free tier accounts are retained in cloud storage for <strong>14 days</strong>. Upgrade to Premium for permanent cloud storage & up to 100 build slots.
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsSubscriptionModalOpen(true)}
+                  style={{ padding: '4px 12px', background: 'rgba(234, 179, 8, 0.2)', border: '1px solid #eab308', color: '#fef08a', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Keep Permanently 🌟
+                </button>
+              </div>
+            )}
             {savedBuilds.length === 0 ? (
               <div style={{ padding: '40px', background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', textAlign: 'center', color: '#94a3b8' }}>
                 No saved builds found. Go to the Lab sandbox to construct and save custom theorycrafting builds.
@@ -2505,125 +2719,415 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
           )
         })()}
 
-        {/* ── 4. FEED TAB ──────────────────────────────────────────────────────── */}
-        {/* ── 4. FEED TAB ──────────────────────────────────────────────────────── */}
+        {/* ── 4. REVAMPED FEED TAB ──────────────────────────────────────────────── */}
         {activeTab === 'feed' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ animation: 'fadeIn 0.3s ease-out', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {/* Header Title */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '16px' }}>
               <div>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: 0, color: 'white' }}>Predecessor Content Feed</h2>
-                <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 0 0' }}>Latest announcements, balance notes, patch discussions, and community posts.</p>
+                <h2 style={{ fontSize: '1.85rem', fontWeight: 'bold', margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ background: 'linear-gradient(135deg, #ef4444 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    Predecessor Central Hub
+                  </span>
+                  <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', color: '#60a5fa' }}>
+                    UGC & AI Content Engine
+                  </span>
+                </h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '6px 0 0 0' }}>
+                  The central hub for Predecessor UGC videos, AI-driven gameplay & hero guides, and official developer announcements.
+                </p>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>Admin Simulator:</span>
-                <button
-                  onClick={async () => {
-                    const res = await fetch('/api/admin/sync', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ action: 'sync_feed' })
-                    })
-                    const data = await res.json()
-                    if (data.success) {
-                      alert('Feed Ingest completed! Reload to see changes.')
-                      window.location.reload()
-                    } else {
-                      alert('Ingestion error: ' + data.error)
-                    }
-                  }}
-                  style={{ padding: '8px 14px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer' }}
+                <a
+                  href="/admin"
+                  style={{ padding: '8px 14px', background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  🔄 Scrape / Ingest Live Feed
-                </button>
+                  ⚙️ Admin AI Dashboard
+                </a>
               </div>
             </div>
 
-            {/* Source Filters */}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '16px' }}>
-              {(['all', 'official', 'reddit', 'youtube'] as const).map((filter) => {
-                const label = filter === 'all' ? 'All Posts' : filter === 'official' ? 'Official Posts' : filter === 'reddit' ? 'Reddit' : 'YouTube Videos'
-                const isActive = feedFilter === filter
-                return (
+            {/* ── SECTION 1: ENDLESS HORIZONTAL YOUTUBE UGC CAROUSEL ───────────────── */}
+            <div style={{ background: 'linear-gradient(180deg, #111827 0%, #0b0f19 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#ef4444' }}>📺</span> Predecessor UGC Video Hub
+                  </h3>
+                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Endless horizontal carousel • Powered by YouTube player resources</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <button
-                    key={filter}
-                    onClick={() => setFeedFilter(filter)}
-                    style={{
-                      padding: '8px 16px',
-                      background: isActive ? '#3b82f6' : 'rgba(255,255,255,0.05)',
-                      color: isActive ? 'white' : '#cbd5e1',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
+                    onClick={() => {
+                      const el = document.getElementById('ugc-carousel-container')
+                      if (el) el.scrollBy({ left: -320, behavior: 'smooth' })
                     }}
+                    style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
                   >
-                    {label}
+                    ← Left
                   </button>
-                )
-              })}
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('ugc-carousel-container')
+                      if (el) el.scrollBy({ left: 320, behavior: 'smooth' })
+                    }}
+                    style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Right →
+                  </button>
+                </div>
+              </div>
+
+              {/* Horizontal Endless Scroll Container */}
+              <div
+                id="ugc-carousel-container"
+                style={{
+                  display: 'flex',
+                  gap: '16px',
+                  overflowX: 'auto',
+                  scrollSnapType: 'x mandatory',
+                  paddingBottom: '12px',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#3b82f6 #111827',
+                }}
+              >
+                {loadingUgc ? (
+                  <div style={{ padding: '40px', color: '#94a3b8' }}>Loading YouTube playlist...</div>
+                ) : (
+                  // Duplicate items array to create seamless endless horizontal scroll feel
+                  [...ugcVideos, ...ugcVideos].map((video, idx) => (
+                    <div
+                      key={`${video.id}_${idx}`}
+                      onClick={() => setSelectedUgcVideoId(video.videoId)}
+                      style={{
+                        minWidth: '280px',
+                        maxWidth: '280px',
+                        scrollSnapAlign: 'start',
+                        background: '#090d16',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        borderRadius: '14px',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        position: 'relative',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                    >
+                      {/* Thumbnail Container */}
+                      <div style={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden', background: '#1e293b' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={video.thumbnailUrl} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                          <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#ef4444', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white', fontSize: '1.2rem', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.5)' }}>
+                            ▶
+                          </div>
+                        </div>
+                        {video.duration && (
+                          <span style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.85)', color: 'white', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                            {video.duration}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'white', lineHeight: '1.3', lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {video.title}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#94a3b8', marginTop: 'auto' }}>
+                          <span>{video.channelName}</span>
+                          {video.views && <span>{video.views} views</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
-              {loadedFeedItems.map((item) => {
-                return (
+            {/* ── SECTION 2: TARGETED AI POSTS FEED (SEO DRIVER) ──────────────────── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 'bold', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    🤖 Targeted Gameplay & Hero AI Guides
+                  </h3>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>SEO-focused guides, hero breakdowns, and macro gameplay tutorials</span>
+                </div>
+
+                {/* Category Filters */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'all', label: 'All Guides' },
+                    { id: 'gameplay', label: '🎮 Gameplay & Macro' },
+                    { id: 'hero_guide', label: '⚔️ Hero Guides' },
+                    { id: 'item_overview', label: '🛡️ Build & Item Overviews' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setAiCategoryFilter(cat.id)}
+                      style={{
+                        padding: '6px 14px',
+                        background: aiCategoryFilter === cat.id ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                        color: aiCategoryFilter === cat.id ? 'white' : '#cbd5e1',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '8px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Grid of AI Posts */}
+              {loadingAiPosts ? (
+                <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8' }}>Loading AI posts...</div>
+              ) : aiPosts.filter((p) => aiCategoryFilter === 'all' || p.category === aiCategoryFilter).length === 0 ? (
+                <div style={{ background: '#111827', padding: '30px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', color: '#94a3b8' }}>
+                  No approved posts found for this category. Visit the <a href="/admin" style={{ color: '#38bdf8' }}>Admin Dashboard</a> to review or seed posts.
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                  {aiPosts
+                    .filter((p) => aiCategoryFilter === 'all' || p.category === aiCategoryFilter)
+                    .map((post) => (
+                      <div
+                        key={post.id}
+                        onClick={() => setSelectedAiPostModal(post)}
+                        style={{
+                          background: 'linear-gradient(180deg, #111827 0%, #0d1322 100%)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: '16px',
+                          padding: '20px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          position: 'relative',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#3b82f6'
+                          e.currentTarget.style.transform = 'translateY(-2px)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+                          e.currentTarget.style.transform = 'translateY(0)'
+                        }}
+                      >
+                        {/* Header Badges */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', background: '#3b82f6', color: 'white', padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                            {post.category?.replace('_', ' ')}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        {/* Title */}
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0, color: 'white', lineHeight: '1.3' }}>
+                          {post.title}
+                        </h4>
+
+                        {/* Summary */}
+                        <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineClamp: 3, WebkitLineClamp: 3, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {post.summary}
+                        </p>
+
+                        {/* Tags & Author */}
+                        <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                            {post.tags?.slice(0, 3).map((t: string) => (
+                              <span key={t} style={{ fontSize: '0.68rem', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', color: '#38bdf8', borderRadius: '4px' }}>
+                                #{t}
+                              </span>
+                            ))}
+                          </div>
+                          <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 'bold' }}>Read Full Guide →</span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── SECTION 3: OFFICIAL PREDECESSOR NEWS ────────────────────────────── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 'bold', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: '#3b82f6' }}>📰</span> Official Predecessor Announcements
+                </h3>
+                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Direct developer updates from predecessors official news page (predecessorgame.com)</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                {officialNewsItems.slice(0, 6).map((item) => (
                   <div
                     key={item.id}
                     style={{
                       background: '#111827',
-                      border: item.source === 'official' ? '2.5px solid #3b82f6' : '1px solid rgba(255,255,255,0.08)',
+                      border: '2px solid #3b82f6',
                       borderRadius: '16px',
                       overflow: 'hidden',
                       display: 'flex',
                       flexDirection: 'column',
-                      position: 'relative'
                     }}
                   >
-                    <div style={{ aspectRatio: '16/9', overflow: 'hidden', position: 'relative', background: '#1e293b' }}>
+                    <div style={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden', background: '#1e293b' }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={item.image_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      
-                      {/* Source Badges */}
-                      <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', gap: '6px' }}>
-                        {item.source === 'official' ? (
-                          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', background: '#3b82f6', color: 'white', padding: '4px 8px', borderRadius: '6px' }}>Official Announcement</span>
-                        ) : item.source === 'reddit' ? (
-                          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', background: '#ff4500', color: 'white', padding: '4px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            👽 Reddit • ⬆️ {item.score}
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', background: '#ff0000', color: 'white', padding: '4px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            📺 YouTube
-                          </span>
-                        )}
+                      <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold', background: '#3b82f6', color: 'white', padding: '4px 8px', borderRadius: '6px' }}>
+                          Official Announcement
+                        </span>
                       </div>
                     </div>
 
                     <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', margin: 0, color: 'white', lineHeight: '1.4' }}>{item.title}</h4>
-                      <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineClamp: 3, WebkitLineClamp: 3, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden', height: '54px' }}>{item.excerpt}</p>
-                      
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineClamp: 3, WebkitLineClamp: 3, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.excerpt}</p>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', paddingTop: '10px' }}>
                         <a
                           href={item.content_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ textDecoration: 'none', padding: '6px 12px', background: '#3b82f6', color: 'white', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}
+                          style={{ textDecoration: 'none', padding: '6px 12px', background: '#3b82f6', color: 'white', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}
                         >
-                          Read Full Post
+                          Read on Predecessor Site ↗
                         </a>
                       </div>
                     </div>
                   </div>
-                )
-              })}
+                ))}
+              </div>
             </div>
 
-            {/* Sentinel for Endless Scroll */}
-            {hasMoreFeed && (
-              <div ref={observerRef} style={{ display: 'flex', justifyContent: 'center', padding: '20px', color: '#94a3b8', fontSize: '0.9rem' }}>
-                {loadingMoreFeed ? 'Loading more posts...' : 'Scroll down to load more'}
+            {/* ── MODAL 1: YOUTUBE VIDEO PLAYER ────────────────────────────────────── */}
+            {selectedUgcVideoId && (
+              <div
+                onClick={() => setSelectedUgcVideoId(null)}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0,0,0,0.85)',
+                  zIndex: 9999,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '20px',
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: '#0f172a',
+                    borderRadius: '16px',
+                    width: '100%',
+                    maxWidth: '850px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: '#1e293b', borderBottom: '1px solid #334155' }}>
+                    <span style={{ fontWeight: 'bold', color: 'white', fontSize: '0.95rem' }}>📺 Predecessor UGC Video Player</span>
+                    <button
+                      onClick={() => setSelectedUgcVideoId(null)}
+                      style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div style={{ aspectRatio: '16/9', width: '100%', background: 'black' }}>
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={`https://www.youtube-nocookie.com/embed/${selectedUgcVideoId}?autoplay=1`}
+                      title="Predecessor UGC Video"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── MODAL 2: AI POST FULL READER ─────────────────────────────────────── */}
+            {selectedAiPostModal && (
+              <div
+                onClick={() => setSelectedAiPostModal(null)}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0,0,0,0.85)',
+                  zIndex: 9999,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '20px',
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: '#0f172a',
+                    borderRadius: '16px',
+                    width: '100%',
+                    maxWidth: '800px',
+                    maxHeight: '85vh',
+                    overflowY: 'auto',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    color: '#f1f5f9',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #334155', paddingBottom: '14px' }}>
+                    <div>
+                      <span style={{ padding: '3px 8px', borderRadius: '4px', background: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                        {selectedAiPostModal.category?.replace('_', ' ')}
+                      </span>
+                      <h2 style={{ margin: '8px 0 0 0', fontSize: '1.5rem', color: 'white' }}>{selectedAiPostModal.title}</h2>
+                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+                        Author: {selectedAiPostModal.author} • Published: {new Date(selectedAiPostModal.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedAiPostModal(null)}
+                      style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', padding: '6px 12px', borderRadius: '6px', fontSize: '0.9rem', cursor: 'pointer' }}
+                    >
+                      Close ✕
+                    </button>
+                  </div>
+
+                  {/* Summary & Tags */}
+                  <div style={{ background: '#1e293b', padding: '14px', borderRadius: '8px', border: '1px solid #334155', fontSize: '0.9rem' }}>
+                    <div style={{ fontStyle: 'italic', color: '#cbd5e1' }}>"{selectedAiPostModal.summary}"</div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+                      {selectedAiPostModal.tags?.map((t: string) => (
+                        <span key={t} style={{ padding: '2px 8px', background: '#0f172a', color: '#38bdf8', borderRadius: '4px', fontSize: '0.75rem' }}>
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Full Body Markdown Text */}
+                  <div style={{ background: '#020617', padding: '20px', borderRadius: '8px', border: '1px solid #1e293b', lineHeight: '1.6', fontSize: '0.9rem', whiteSpace: 'pre-wrap', color: '#e2e8f0' }}>
+                    {selectedAiPostModal.content}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -2758,6 +3262,116 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                         </div>
                       </div>
 
+                      {/* Most Popular Build Card (pred.gg) */}
+                      {selectedLibraryHero.popular_build && (
+                        <div style={{ background: '#090d16', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <h5 style={{ fontWeight: 'bold', fontSize: '1rem', color: '#60a5fa', margin: 0 }}>📊 Most Popular Build (pred.gg)</h5>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Scraped weekly from live match statistics</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const pop = selectedLibraryHero.popular_build;
+                                if (!pop) return;
+                                setSelectedHero(selectedLibraryHero);
+                                const resolved = (pop.item_slugs || [])
+                                  .map(slug => items.find(i => i.slug === slug))
+                                  .filter((i): i is ItemDoc => Boolean(i));
+                                setBuildItems(resolved);
+                                if (pop.crest_slug) {
+                                  const cr = items.find(i => i.slug === pop.crest_slug);
+                                  if (cr) setBuildCrest(cr);
+                                }
+                                if (pop.eternal_slug) {
+                                  const et = eternals.find(e => e.slug.toLowerCase() === pop.eternal_slug?.toLowerCase());
+                                  if (et) setBuildEternal(et);
+                                }
+                                setActiveTab('lab');
+                              }}
+                              style={{ padding: '6px 14px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.8rem', cursor: 'pointer' }}
+                            >
+                              ⚡ Load Build in Lab
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            {/* Items */}
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              {selectedLibraryHero.popular_build.item_slugs?.map((slug, idx) => {
+                                const itemDoc = items.find(i => i.slug === slug);
+                                return (
+                                  <div key={idx} style={{ width: '40px', height: '40px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }} title={itemDoc?.display_name || slug}>
+                                    {itemDoc ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={itemDoc.image_url} alt={itemDoc.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      <span style={{ fontSize: '10px', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>{slug}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Crest */}
+                            {selectedLibraryHero.popular_build.crest_slug && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', borderLeft: '1px solid rgba(255,255,255,0.08)', paddingLeft: '12px' }}>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Crest:</span>
+                                {(() => {
+                                  const cr = items.find(i => i.slug === selectedLibraryHero.popular_build?.crest_slug);
+                                  return cr ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img src={cr.image_url} alt={cr.display_name} style={{ width: '28px', height: '28px', borderRadius: '4px' }} />
+                                      <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#60a5fa' }}>{cr.display_name}</span>
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{selectedLibraryHero.popular_build.crest_slug}</span>
+                                  );
+                                })()}
+                              </div>
+                            )}
+
+                            {/* Stats badge */}
+                            {selectedLibraryHero.popular_build.win_rate && (
+                              <div style={{ marginLeft: 'auto', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', padding: '4px 10px', fontSize: '0.8rem', color: '#34d399', fontWeight: 'bold' }}>
+                                {selectedLibraryHero.popular_build.win_rate}% Win Rate ({selectedLibraryHero.popular_build.match_count?.toLocaleString()} matches)
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 📚 Related AI Guides for Hero */}
+                      {(() => {
+                        const relatedPosts = aiPosts.filter(
+                          (p) =>
+                            p.heroId?.toLowerCase() === selectedLibraryHero.slug.toLowerCase() ||
+                            p.tags?.some((t: string) => t.toLowerCase() === selectedLibraryHero.slug.toLowerCase() || t.toLowerCase() === selectedLibraryHero.display_name.toLowerCase())
+                        )
+                        if (relatedPosts.length === 0) return null
+                        return (
+                          <div style={{ background: '#090d16', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              🤖 AI Guides & Posts tagged for {selectedLibraryHero.display_name}
+                            </h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                              {relatedPosts.map((post) => (
+                                <div
+                                  key={post.id}
+                                  onClick={() => setSelectedAiPostModal(post)}
+                                  style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '6px' }}
+                                >
+                                  <div style={{ fontSize: '0.7rem', color: '#3b82f6', fontWeight: 'bold' }}>{post.category?.replace('_', ' ').toUpperCase()}</div>
+                                  <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'white' }}>{post.title}</div>
+                                  <div style={{ fontSize: '0.8rem', color: '#cbd5e1', lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.summary}</div>
+                                  <div style={{ fontSize: '0.7rem', color: '#60a5fa', marginTop: '4px', fontWeight: 'bold' }}>Read Guide →</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </div>
                   </div>
                 )}
@@ -2821,7 +3435,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           <div style={{ background: '#090d16', padding: '16px', borderRadius: '12px' }}>
                             <h4 style={{ fontWeight: 'bold', fontSize: '0.95rem', color: 'white', margin: '0 0 10px 0' }}>Item Stats Block</h4>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem' }}>
-                              {Object.entries(selectedLibraryItem.stats).map(([k, v]) => (
+                              {sortItemStats(selectedLibraryItem.stats).map(([k, v]) => (
                                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: '6px' }}>
                                   <span style={{ color: '#94a3b8', textTransform: 'capitalize' }}>{k.replace(/_/g, ' ')}</span>
                                   <strong style={{ color: '#3b82f6' }}>+{v}</strong>
@@ -3042,8 +3656,13 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
       {/* ── SAVE MODAL ───────────────────────────────────────────────────────── */}
       {isSaveModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', width: '400px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Save Build Specification</h4>
+          <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', width: '420px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Save Build Specification</h4>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '12px' }}>
+                {savedBuilds.length} / {isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT} builds
+              </span>
+            </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Build Name *</label>
@@ -3066,9 +3685,23 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
               />
             </div>
 
-            {!user && (
+            {savedBuilds.length >= (isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT) ? (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p style={{ fontSize: '0.8rem', color: '#fca5a5', margin: 0 }}>
+                  ⚠️ You have reached your saved build limit ({isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT} builds).
+                </p>
+                {!isPremium && (
+                  <button
+                    onClick={() => { setIsSaveModalOpen(false); setIsSubscriptionModalOpen(true); }}
+                    style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', border: 'none', color: '#090d16', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.8rem', cursor: 'pointer' }}
+                  >
+                    Upgrade to Premium for 100 Builds 🚀
+                  </button>
+                )}
+              </div>
+            ) : !user && (
               <p style={{ fontSize: '0.75rem', color: '#fbbf24', margin: 0, fontStyle: 'italic' }}>
-                Note: Account authentication will be required on the next step to complete saving your specification.
+                Note: Account authentication will be required on the next step to complete saving your specification to Firebase.
               </p>
             )}
 
@@ -3080,9 +3713,17 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                 Cancel
               </button>
               <button
-                disabled={!saveBuildName}
+                disabled={!saveBuildName || savedBuilds.length >= (isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT)}
                 onClick={triggerSaveBuild}
-                style={{ padding: '8px 16px', border: 'none', background: '#10b981', color: 'white', borderRadius: '6px', fontWeight: 'bold', cursor: saveBuildName ? 'pointer' : 'not-allowed' }}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  background: (!saveBuildName || savedBuilds.length >= (isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT)) ? 'rgba(255,255,255,0.1)' : '#10b981',
+                  color: (!saveBuildName || savedBuilds.length >= (isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT)) ? '#64748b' : 'white',
+                  borderRadius: '6px',
+                  fontWeight: 'bold',
+                  cursor: (!saveBuildName || savedBuilds.length >= (isPremium ? PREMIUM_BUILD_LIMIT : FREE_BUILD_LIMIT)) ? 'not-allowed' : 'pointer'
+                }}
               >
                 Confirm & Save
               </button>
@@ -3185,7 +3826,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
           
           {hoveredItem.stats && Object.keys(hoveredItem.stats).length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px', background: 'rgba(255,255,255,0.02)', padding: '8px', borderRadius: '6px' }}>
-              {Object.entries(hoveredItem.stats).map(([stat, val]) => (
+              {sortItemStats(hoveredItem.stats).map(([stat, val]) => (
                 <div key={stat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                   <span style={{ color: '#94a3b8', textTransform: 'capitalize' }}>{stat.replace(/_/g, ' ')}</span>
                   <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>+{val}</span>
@@ -3209,6 +3850,9 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
 
       {/* ── AUTH MODAL ─────────────────────────────────────────────────────────── */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+
+      {/* ── SUBSCRIPTION MODAL ─────────────────────────────────────────────────── */}
+      <SubscriptionModal isOpen={isSubscriptionModalOpen} onClose={() => setIsSubscriptionModalOpen(false)} />
 
       {/* Keyframe animation declarations */}
       <style jsx global>{`

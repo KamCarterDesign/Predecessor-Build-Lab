@@ -8,21 +8,49 @@ export interface SavedBuild {
   heroSlug: string;
   heroName: string;
   role: string;
+  level?: number;
   items: string[];
   crest: string | null;
   eternal: string | null;
+  gold?: number;
+  
+  // Hero B specs if duel build:
+  heroBSlug?: string;
+  heroBName?: string;
+  roleB?: string;
+  levelB?: number;
+  itemsB?: string[];
+  crestB?: string | null;
+  eternalB?: string | null;
+  goldB?: number;
+  totalGold?: number;
+
+  createdAt?: string;
   updatedAt: string;
 }
 
-export const syncBuildsToCloud = async (uid: string, localBuilds: SavedBuild[]) => {
+export const FREE_BUILD_LIMIT = 25;
+export const PREMIUM_BUILD_LIMIT = 100;
+
+export const saveCloudBuild = async (uid: string, build: SavedBuild) => {
+  try {
+    const buildRef = doc(db, 'users', uid, 'builds', build.id);
+    // Sanitize object to remove undefined values for Firestore
+    const cleanedBuild = JSON.parse(JSON.stringify(build));
+    await setDoc(buildRef, cleanedBuild, { merge: true });
+  } catch (error) {
+    console.error('Error saving cloud build:', error);
+  }
+};
+
+export const syncBuildsToCloud = async (uid: string, localBuilds: SavedBuild[], maxLimit: number = FREE_BUILD_LIMIT) => {
   try {
     const userBuildsRef = collection(db, 'users', uid, 'builds');
-    
-    // In a real app, we'd do a two-way sync based on updatedAt.
-    // For now, we'll just push local builds to the cloud.
-    for (const build of localBuilds) {
+    const buildsToSync = localBuilds.slice(0, maxLimit);
+    for (const build of buildsToSync) {
       const buildRef = doc(userBuildsRef, build.id);
-      await setDoc(buildRef, build, { merge: true });
+      const cleanedBuild = JSON.parse(JSON.stringify(build));
+      await setDoc(buildRef, cleanedBuild, { merge: true });
     }
   } catch (error) {
     console.error('Error syncing builds to cloud:', error);
@@ -48,3 +76,4 @@ export const deleteCloudBuild = async (uid: string, buildId: string) => {
     console.error('Error deleting cloud build:', error);
   }
 };
+

@@ -55,6 +55,14 @@ export interface HeroDoc {
   abilities: HeroAbility[]
   base_stats: HeroBaseStats
   dna_profile: HeroDnaProfile
+  popular_build?: {
+    item_slugs: string[]
+    crest_slug: string | null
+    eternal_slug: string | null
+    win_rate: number | null
+    match_count: number | null
+    scraped_at: string
+  }
 }
 
 export interface ItemDoc {

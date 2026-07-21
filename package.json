@@ -13,6 +13,7 @@
     "sync:matches": "npx tsx scripts/sync-matches.ts",
     "sync:stats": "npx tsx scripts/sync-hero-statistics.ts",
     "sync:feed": "npx tsx scripts/sync-feed.ts",
+    "sync:popular-builds": "npx tsx scripts/sync-popular-builds.ts",
     "sync:all": "npm run sync:heroes && npm run sync:items && npm run sync:eternals && npm run sync:feed",
     "compute:synergy": "npx tsx scripts/compute-synergy.ts",
     "compute:meta": "npx tsx scripts/compute-meta-snapshot.ts",
