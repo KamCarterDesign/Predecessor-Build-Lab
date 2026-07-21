@@ -546,15 +546,160 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
     }
   }
 
+  // ── Unified Search Engine Data & Logic ──────────────────────────────────────
+  const patchesData = useMemo(() => [
+    {
+      version: 'Patch v1.16.2',
+      released: '2026-07-02',
+      content: 'Balance adjustments for new Items including Tainted Blade. Offlaners pick rate adjustment. Level-based armor growth adjustments on support classes.'
+    },
+    {
+      version: 'Patch v1.15.0',
+      released: '2026-06-15',
+      content: 'Ingested 12 confirmed game-wide Eternals minor blessing categories. Introduced scaling damage multipliers.'
+    }
+  ], [])
+
+  const searchRegistry = useMemo(() => {
+    return (query: string, category: 'all' | 'heroes' | 'items' | 'crests' | 'eternals' | 'patches') => {
+      const q = query.toLowerCase().trim()
+      if (!q) {
+        if (category === 'heroes') return heroes.map(h => ({ type: 'hero' as const, name: h.display_name, sub: `Hero (${h.classes.join(', ')})`, raw: h }))
+        if (category === 'items') return items.filter(i => i.slot_type !== 'Crest').map(i => ({ type: 'item' as const, name: i.display_name, sub: `Item - Cost: ${i.total_price}g`, raw: i }))
+        if (category === 'crests') return items.filter(i => i.slot_type === 'Crest').map(i => ({ type: 'crest' as const, name: i.display_name, sub: `Crest - Cost: ${i.total_price}g`, raw: i }))
+        if (category === 'eternals') return eternals.map(e => ({ type: 'eternal' as const, name: e.display_name || e.name, sub: `Eternal - Category: ${e.category || 'General'}`, raw: e }))
+        if (category === 'patches') return patchesData.map(p => ({ type: 'patch' as const, name: p.version, sub: `Released: ${p.released}`, raw: p }))
+        return []
+      }
+
+      const results: Array<{
+        type: 'hero' | 'item' | 'crest' | 'eternal' | 'ability' | 'patch'
+        name: string
+        sub: string
+        raw: any
+        heroContext?: any
+      }> = []
+
+      // Match heroes
+      if (category === 'all' || category === 'heroes') {
+        heroes.forEach((h) => {
+          if (h.display_name.toLowerCase().includes(q) || h.name.toLowerCase().includes(q)) {
+            results.push({ type: 'hero', name: h.display_name, sub: `Hero (${h.classes.join(', ')})`, raw: h })
+          }
+          if (category === 'all') {
+            h.abilities?.forEach((ab: any) => {
+              if (ab.display_name.toLowerCase().includes(q) || (ab.game_description && ab.game_description.toLowerCase().includes(q))) {
+                results.push({ type: 'ability', name: ab.display_name, sub: `Ability on ${h.display_name}`, raw: ab, heroContext: h })
+              }
+            })
+          }
+        })
+      }
+
+      // Match items
+      if (category === 'all' || category === 'items') {
+        items.forEach((item) => {
+          if (item.slot_type !== 'Crest' && item.display_name.toLowerCase().includes(q)) {
+            results.push({
+              type: 'item',
+              name: item.display_name,
+              sub: `Item - Cost: ${item.total_price}g (${item.aggression_type || 'General'})`,
+              raw: item
+            })
+          }
+        })
+      }
+
+      // Match crests
+      if (category === 'all' || category === 'crests') {
+        items.forEach((item) => {
+          if (item.slot_type === 'Crest' && item.display_name.toLowerCase().includes(q)) {
+            results.push({
+              type: 'crest',
+              name: item.display_name,
+              sub: `Crest - Cost: ${item.total_price}g (${item.aggression_type || 'General'})`,
+              raw: item
+            })
+          }
+        })
+      }
+
+      // Match eternals
+      if (category === 'all' || category === 'eternals') {
+        eternals.forEach((et) => {
+          if (et.display_name?.toLowerCase().includes(q) || et.name?.toLowerCase().includes(q) || (et.description && et.description.toLowerCase().includes(q))) {
+            results.push({ type: 'eternal', name: et.display_name || et.name, sub: `Eternal - Category: ${et.category || 'General'}`, raw: et })
+          }
+        })
+      }
+
+      // Match patches
+      if (category === 'all' || category === 'patches') {
+        patchesData.forEach((p) => {
+          if (p.version.toLowerCase().includes(q) || p.content.toLowerCase().includes(q)) {
+            results.push({
+              type: 'patch',
+              name: p.version,
+              sub: `Patch Notes - Released: ${p.released}`,
+              raw: p
+            })
+          }
+        })
+      }
+
+      return results
+    }
+  }, [heroes, items, eternals, patchesData])
+
+  const checkItemStats = (item: ItemDoc, activeFilters: string[]) => {
+    if (!item.stats) return false
+    for (const stat of activeFilters) {
+      if (stat === 'physical_power' && !((item.stats.physical_power || 0) > 0)) return false;
+      if (stat === 'magical_power' && !((item.stats.magical_power || 0) > 0 || (item.stats.energy_power || 0) > 0)) return false;
+      if (stat === 'health' && !((item.stats.max_health || 0) > 0 || (item.stats.health || 0) > 0)) return false;
+      if (stat === 'ability_haste' && !((item.stats.ability_haste || 0) > 0)) return false;
+      if (stat === 'physical_armor' && !((item.stats.physical_armor || 0) > 0)) return false;
+      if (stat === 'magical_armor' && !((item.stats.magical_armor || 0) > 0)) return false;
+      if (stat === 'physical_penetration' && !((item.stats.physical_penetration || 0) > 0)) return false;
+      if (stat === 'magical_penetration' && !((item.stats.magical_penetration || 0) > 0)) return false;
+      if (stat === 'crit_chance' && !((item.stats.crit_chance || item.stats.critical_chance || 0) > 0)) return false;
+      if (stat === 'attack_speed' && !((item.stats.attack_speed || 0) > 0)) return false;
+      if (stat === 'lifesteal' && !((item.stats.lifesteal || 0) > 0)) return false;
+      if (stat === 'magical_lifesteal' && !((item.stats.magical_lifesteal || 0) > 0)) return false;
+      if (stat === 'omnivamp' && !((item.stats.omnivamp || 0) > 0)) return false;
+      if (stat === 'heal_shield_increase' && !((item.stats.heal_shield_increase || 0) > 0)) return false;
+      if (stat === 'max_mana' && !((item.stats.max_mana || item.stats.mana || 0) > 0)) return false;
+      if (stat === 'health_regeneration' && !((item.stats.health_regeneration || item.stats.base_health_regeneration || 0) > 0)) return false;
+      if (stat === 'mana_regeneration' && !((item.stats.mana_regeneration || item.stats.base_mana_regeneration || 0) > 0)) return false;
+      if (stat === 'movement_speed' && !((item.stats.movement_speed || 0) > 0)) return false;
+      if (stat === 'tenacity' && !((item.stats.tenacity || 0) > 0)) return false;
+      if (stat === 'gold_per_second' && !((item.stats.gold_per_second || 0) > 0)) return false;
+    }
+    return true
+  }
+
   // ── Filter Data ────────────────────────────────────────────────────────────
   const filteredHeroes = useMemo(() => {
-    return heroes.filter((hero) => {
-      const matchesSearch = hero.display_name.toLowerCase().includes(heroSearch.toLowerCase())
-      const matchesClass = selectedClass === 'All' || hero.classes.includes(selectedClass)
-      const matchesRole = selectedRole === 'All' || hero.roles.includes(selectedRole)
-      return matchesSearch && matchesClass && matchesRole
-    })
-  }, [heroes, heroSearch, selectedClass, selectedRole])
+    const searchMatches = searchRegistry(heroSearch, 'heroes')
+    return searchMatches
+      .map(m => m.raw)
+      .filter((hero) => {
+        const matchesClass = selectedClass === 'All' || hero.classes.includes(selectedClass)
+        const matchesRole = selectedRole === 'All' || hero.roles.includes(selectedRole)
+        return matchesClass && matchesRole
+      })
+  }, [searchRegistry, heroSearch, selectedClass, selectedRole])
+
+  const filteredLibraryHeroes = useMemo(() => {
+    const searchMatches = searchRegistry(librarySearchQuery, 'heroes')
+    return searchMatches
+      .map(m => m.raw)
+      .filter((hero) => {
+        const matchesClass = selectedClass === 'All' || hero.classes.includes(selectedClass)
+        const matchesRole = selectedRole === 'All' || hero.roles.includes(selectedRole)
+        return matchesClass && matchesRole
+      })
+  }, [searchRegistry, librarySearchQuery, selectedClass, selectedRole])
 
   useEffect(() => {
     setVisibleItemsCount(16)
@@ -573,113 +718,80 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   }, [])
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const matchesSearch = item.display_name.toLowerCase().includes(itemSearch.toLowerCase())
-      
-      // Tier filter
-      let matchesTier = true
-      if (itemTierFilter === 3) {
-        matchesTier = item.is_final_item === true
-      } else if (itemTierFilter === 2) {
-        matchesTier = item.tier === 2
-      } else if (itemTierFilter === 1) {
-        matchesTier = item.tier === 1
-      }
-
-      const matchesClass = itemClassFilter === 'All' || item.hero_class === itemClassFilter
-      
-      // Stat filters
-      let matchesStats = true
-      if (activeStatFilters.length > 0) {
-        for (const stat of activeStatFilters) {
-          if (stat === 'physical_power' && !((item.stats.physical_power || 0) > 0)) matchesStats = false;
-          if (stat === 'magical_power' && !((item.stats.magical_power || 0) > 0 || (item.stats.energy_power || 0) > 0)) matchesStats = false;
-          if (stat === 'health' && !((item.stats.max_health || 0) > 0 || (item.stats.health || 0) > 0)) matchesStats = false;
-          if (stat === 'ability_haste' && !((item.stats.ability_haste || 0) > 0)) matchesStats = false;
-          if (stat === 'physical_armor' && !((item.stats.physical_armor || 0) > 0)) matchesStats = false;
-          if (stat === 'magical_armor' && !((item.stats.magical_armor || 0) > 0)) matchesStats = false;
-          if (stat === 'physical_penetration' && !((item.stats.physical_penetration || 0) > 0)) matchesStats = false;
-          if (stat === 'magical_penetration' && !((item.stats.magical_penetration || 0) > 0)) matchesStats = false;
-          if (stat === 'crit_chance' && !((item.stats.crit_chance || item.stats.critical_chance || 0) > 0)) matchesStats = false;
-          if (stat === 'attack_speed' && !((item.stats.attack_speed || 0) > 0)) matchesStats = false;
-          if (stat === 'lifesteal' && !((item.stats.lifesteal || 0) > 0)) matchesStats = false;
-          if (stat === 'magical_lifesteal' && !((item.stats.magical_lifesteal || 0) > 0)) matchesStats = false;
-          if (stat === 'omnivamp' && !((item.stats.omnivamp || 0) > 0)) matchesStats = false;
-          if (stat === 'heal_shield_increase' && !((item.stats.heal_shield_increase || 0) > 0)) matchesStats = false;
-          if (stat === 'max_mana' && !((item.stats.max_mana || item.stats.mana || 0) > 0)) matchesStats = false;
-          if (stat === 'health_regeneration' && !((item.stats.health_regeneration || item.stats.base_health_regeneration || 0) > 0)) matchesStats = false;
-          if (stat === 'mana_regeneration' && !((item.stats.mana_regeneration || item.stats.base_mana_regeneration || 0) > 0)) matchesStats = false;
-          if (stat === 'movement_speed' && !((item.stats.movement_speed || 0) > 0)) matchesStats = false;
-          if (stat === 'tenacity' && !((item.stats.tenacity || 0) > 0)) matchesStats = false;
-          if (stat === 'gold_per_second' && !((item.stats.gold_per_second || 0) > 0)) matchesStats = false;
+    const searchMatches = searchRegistry(itemSearch, 'items')
+    return searchMatches
+      .map(m => m.raw)
+      .filter((item) => {
+        let matchesTier = true
+        if (itemTierFilter === 3) {
+          matchesTier = item.is_final_item === true
+        } else if (itemTierFilter === 2) {
+          matchesTier = item.tier === 2
+        } else if (itemTierFilter === 1) {
+          matchesTier = item.tier === 1
         }
-      }
-
-      return matchesSearch && matchesTier && matchesClass && matchesStats
-    })
-  }, [items, itemSearch, itemTierFilter, itemClassFilter, activeStatFilters])
-
-  // Crests filtered by legendary status if final tier or tier 3 selected
-  const filteredCrests = useMemo(() => {
-    return items.filter((item) => {
-      if (item.slot_type !== 'Crest') return false
-      const matchesSearch = item.display_name.toLowerCase().includes(itemSearch.toLowerCase())
-      
-      // legendary crests only by default
-      if (itemTierFilter === 3) {
-        return matchesSearch && item.rarity === 'Legendary'
-      }
-      return matchesSearch
-    })
-  }, [items, itemSearch, itemTierFilter])
-
-  // ── Global Search Computations ─────────────────────────────────────────────
-  const globalSearchResults = useMemo(() => {
-    if (!globalSearchQuery.trim()) return []
-    const q = globalSearchQuery.toLowerCase()
-    const results: Array<{
-      type: 'hero' | 'item' | 'crest' | 'eternal' | 'ability'
-      name: string
-      sub: string
-      raw: any
-      heroContext?: any
-    }> = []
-
-    // Match heroes
-    heroes.forEach((h) => {
-      if (h.display_name.toLowerCase().includes(q) || h.name.toLowerCase().includes(q)) {
-        results.push({ type: 'hero', name: h.display_name, sub: `Hero (${h.classes.join(', ')})`, raw: h })
-      }
-      // Match abilities inside heroes
-      h.abilities?.forEach((ab: any) => {
-        if (ab.display_name.toLowerCase().includes(q) || (ab.game_description && ab.game_description.toLowerCase().includes(q))) {
-          results.push({ type: 'ability', name: ab.display_name, sub: `Ability on ${h.display_name}`, raw: ab, heroContext: h })
-        }
+        const matchesClass = itemClassFilter === 'All' || item.hero_class === itemClassFilter
+        const matchesStats = checkItemStats(item, activeStatFilters)
+        return matchesTier && matchesClass && matchesStats
       })
-    })
+  }, [searchRegistry, itemSearch, itemTierFilter, itemClassFilter, activeStatFilters])
 
-    // Match items & crests
-    items.forEach((item) => {
-      if (item.display_name.toLowerCase().includes(q)) {
-        const isCrest = item.slot_type === 'Crest'
-        results.push({
-          type: isCrest ? 'crest' : 'item',
-          name: item.display_name,
-          sub: `${isCrest ? 'Crest' : 'Item'} - Cost: ${item.total_price}g (${item.aggression_type || 'General'})`,
-          raw: item
-        })
-      }
-    })
+  const filteredLibraryItems = useMemo(() => {
+    const searchMatches = searchRegistry(librarySearchQuery, 'items')
+    return searchMatches
+      .map(m => m.raw)
+      .filter((item) => {
+        let matchesTier = true
+        if (itemTierFilter === 3) {
+          matchesTier = item.is_final_item === true
+        } else if (itemTierFilter === 2) {
+          matchesTier = item.tier === 2
+        } else if (itemTierFilter === 1) {
+          matchesTier = item.tier === 1
+        }
+        const matchesClass = itemClassFilter === 'All' || item.hero_class === itemClassFilter
+        const matchesStats = checkItemStats(item, activeStatFilters)
+        return matchesTier && matchesClass && matchesStats
+      })
+  }, [searchRegistry, librarySearchQuery, itemTierFilter, itemClassFilter, activeStatFilters])
 
-    // Match eternals
-    eternals.forEach((et) => {
-      if (et.display_name?.toLowerCase().includes(q) || et.name?.toLowerCase().includes(q) || (et.description && et.description.toLowerCase().includes(q))) {
-        results.push({ type: 'eternal', name: et.display_name || et.name, sub: `Eternal - Category: ${et.category || 'General'}`, raw: et })
-      }
-    })
+  const filteredCrests = useMemo(() => {
+    const searchMatches = searchRegistry(itemSearch, 'crests')
+    return searchMatches
+      .map(m => m.raw)
+      .filter((item) => {
+        if (itemTierFilter === 3) {
+          return item.rarity === 'Legendary'
+        }
+        return true
+      })
+  }, [searchRegistry, itemSearch, itemTierFilter])
 
-    return results.slice(0, 10) // Cap results for sub-300ms rendering
-  }, [globalSearchQuery, heroes, items, eternals])
+  const filteredLibraryCrests = useMemo(() => {
+    const searchMatches = searchRegistry(librarySearchQuery, 'crests')
+    return searchMatches
+      .map(m => m.raw)
+      .filter((item) => {
+        if (itemTierFilter === 3) {
+          return item.rarity === 'Legendary'
+        }
+        return true
+      })
+  }, [searchRegistry, librarySearchQuery, itemTierFilter])
+
+  const filteredLibraryEternals = useMemo(() => {
+    const searchMatches = searchRegistry(librarySearchQuery, 'eternals')
+    return searchMatches.map(m => m.raw)
+  }, [searchRegistry, librarySearchQuery])
+
+  const filteredLibraryPatches = useMemo(() => {
+    const searchMatches = searchRegistry(librarySearchQuery, 'patches')
+    return searchMatches.map(m => m.raw)
+  }, [searchRegistry, librarySearchQuery])
+
+  const globalSearchResults = useMemo(() => {
+    return searchRegistry(globalSearchQuery, 'all').slice(0, 10)
+  }, [searchRegistry, globalSearchQuery])
 
   // ── Real-Time Simulation Calculation ──────────────────────────────────────
   const analysisResult = useMemo(() => {
@@ -711,9 +823,14 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
     buildItems.forEach((item) => {
       if (item.requirements && item.requirements.length > 0) {
         // Check if at least one requirement is satisfied in the build
-        const hasReq = item.requirements.some((reqSlug) =>
-          buildItems.some((bi) => bi.slug === reqSlug)
-        )
+        const hasReq = item.requirements.some((reqSlug) => {
+          const cleanReq = reqSlug.toLowerCase().replace(/[^a-z0-9]/g, '')
+          return buildItems.some((bi) => {
+            const cleanBiSlug = bi.slug.toLowerCase().replace(/[^a-z0-9]/g, '')
+            const cleanBiName = (bi.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+            return cleanBiSlug === cleanReq || cleanBiName === cleanReq
+          })
+        })
         // If it has requirements but NONE are present in build, throw warning
         if (!hasReq) {
           warnings.push(`Warning: ${item.display_name} requires intermediate items (e.g. ${item.requirements.join(', ')}) to build.`)
@@ -3483,6 +3600,8 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                     setSelectedLibraryHero(null)
                     setSelectedLibraryItem(null)
                     setSelectedLibraryEternal(null)
+                    setLibrarySearchQuery('')
+                    setLibraryCalculatorItem(null)
                   }}
                   style={{
                     padding: '8px 16px',
@@ -3501,12 +3620,119 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
               ))}
             </div>
 
+            {/* Common Search Bar for Library tabs */}
+            {!selectedLibraryHero && !selectedLibraryItem && !selectedLibraryEternal && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input
+                  type="text"
+                  placeholder={`🔍 Search library ${librarySection}...`}
+                  value={librarySearchQuery}
+                  onChange={(e) => setLibrarySearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: '#111827',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '0.9rem',
+                    outline: 'none'
+                  }}
+                />
+                
+                {/* Under Heroes, render Class & Role filters */}
+                {librarySection === 'heroes' && renderHeroFilters()}
+
+                {/* Under Items & Crests, render sub-filters for Tier and Stats */}
+                {(librarySection === 'items' || librarySection === 'crests') && (
+                  <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* Tier Filter */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
+                      <span className="russo-font" style={{ fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase', minWidth: '110px' }}>Tier Filter:</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {[
+                          { value: 3, label: 'Tier 3 (Legendary)' },
+                          { value: 2, label: 'Tier 2 (T2)' },
+                          { value: 1, label: 'Tier 1 (T1)' }
+                        ].map((t) => {
+                          const isActive = itemTierFilter === t.value
+                          return (
+                            <button
+                              key={t.value}
+                              onClick={() => setItemTierFilter(isActive ? 3 : t.value)}
+                              style={{
+                                padding: '6px 12px',
+                                border: isActive ? '1px solid #7c3aed' : '1px solid rgba(255,255,255,0.08)',
+                                borderRadius: '6px',
+                                background: isActive ? '#7c3aed' : '#090d16',
+                                color: 'white',
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {t.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Stat Filters (only relevant for items, but nice on crests too) */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '12px' }}>
+                      <span className="russo-font" style={{ fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase', minWidth: '110px', marginTop: '6px' }}>Stat Filters:</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', flex: 1 }}>
+                        {[
+                          { key: 'physical_power', label: 'Phys Power' },
+                          { key: 'magical_power', label: 'Mag Power' },
+                          { key: 'health', label: 'Health' },
+                          { key: 'ability_haste', label: 'Haste' },
+                          { key: 'physical_armor', label: 'Phys Armor' },
+                          { key: 'magical_armor', label: 'Mag Armor' },
+                          { key: 'crit_chance', label: 'Crit' },
+                          { key: 'attack_speed', label: 'Atk Speed' },
+                          { key: 'lifesteal', label: 'Lifesteal' },
+                          { key: 'movement_speed', label: 'Move Speed' }
+                        ].map((stat) => {
+                          const isActive = activeStatFilters.includes(stat.key)
+                          return (
+                            <button
+                              key={stat.key}
+                              onClick={() => {
+                                if (isActive) {
+                                  setActiveStatFilters(activeStatFilters.filter(k => k !== stat.key))
+                                } else {
+                                  setActiveStatFilters([...activeStatFilters, stat.key])
+                                }
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                border: isActive ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.08)',
+                                borderRadius: '6px',
+                                background: isActive ? '#3b82f6' : '#090d16',
+                                color: 'white',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              {stat.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 5.1 HEROES SECTION */}
             {librarySection === 'heroes' && (
               <div>
                 {!selectedLibraryHero ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px' }}>
-                    {heroes.map((hero) => (
+                    {filteredLibraryHeroes.map((hero) => (
                       <div
                         key={hero.slug}
                         onClick={() => { setSelectedLibraryHero(hero); setLibraryHeroLevel(1); }}
@@ -3525,6 +3751,36 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                       <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: 0 }}>{selectedLibraryHero.display_name} Detail</h3>
                     </div>
 
+                    {/* Meta snapshot cards for win/ban/pick rates */}
+                    {(() => {
+                      const snapshot = metaSnapshots[0] || { hero_win_rates: {}, hero_pick_rates: {}, hero_ban_rates: {} }
+                      const heroId = String(selectedLibraryHero.id)
+                      const rawWin = snapshot.hero_win_rates?.[heroId] || selectedLibraryHero.popular_build?.win_rate || 50.0
+                      const winRate = Number(rawWin).toFixed(2)
+                      const pickRate = Number(snapshot.hero_pick_rates?.[heroId] || 5.0).toFixed(2)
+                      const banRate = Number(snapshot.hero_ban_rates?.[heroId] || (Number(rawWin) > 50 ? (Number(rawWin) - 48) * 8.5 : 1.25)).toFixed(2)
+
+                      return (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                          <div style={{ background: '#090d16', borderLeft: '4px solid #3b82f6', padding: '12px 16px', borderRadius: '4px 8px 8px 4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 'bold', letterSpacing: '0.05em' }}>WIN RATE</span>
+                            <strong style={{ fontSize: '1.25rem', color: 'white' }}>{winRate}%</strong>
+                            <span style={{ fontSize: '0.65rem', color: '#64748b' }}>RANKED</span>
+                          </div>
+                          <div style={{ background: '#090d16', borderLeft: '4px solid #ef4444', padding: '12px 16px', borderRadius: '4px 8px 8px 4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 'bold', letterSpacing: '0.05em' }}>BAN RATE</span>
+                            <strong style={{ fontSize: '1.25rem', color: 'white' }}>{banRate}%</strong>
+                            <span style={{ fontSize: '0.65rem', color: '#64748b' }}>RANKED</span>
+                          </div>
+                          <div style={{ background: '#090d16', borderLeft: '4px solid #10b981', padding: '12px 16px', borderRadius: '4px 8px 8px 4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 'bold', letterSpacing: '0.05em' }}>PICK RATE</span>
+                            <strong style={{ fontSize: '1.25rem', color: 'white' }}>{pickRate}%</strong>
+                            <span style={{ fontSize: '0.65rem', color: '#64748b' }}>RANKED</span>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
                       {/* Left: Image, Level Slider, and dynamic stats */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -3536,67 +3792,196 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                         <div style={{ background: '#090d16', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
                             <span>Interactive Stats Slider</span>
-                            <strong style={{ color: '#3b82f6' }}>Level {libraryHeroLevel}</strong>
+                            <strong style={{ color: '#3b82f6' }}>Level {levelA}</strong>
                           </div>
                           <input
                             type="range"
                             min="1"
                             max="18"
-                            value={libraryHeroLevel}
-                            onChange={(e) => setLibraryHeroLevel(Number(e.target.value))}
+                            value={levelA}
+                            onChange={(e) => setLevelA(Number(e.target.value))}
                             style={{ width: '100%', cursor: 'pointer', marginBottom: '16px' }}
                           />
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Max Health</span>
-                              <strong style={{ color: '#34d399' }}>{selectedLibraryHero.base_stats.max_health[libraryHeroLevel-1]}</strong>
+                              <strong style={{ color: '#34d399' }}>{selectedLibraryHero.base_stats.max_health[levelA-1]}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Max Mana</span>
-                              <strong style={{ color: '#34d399' }}>{selectedLibraryHero.base_stats.max_mana[libraryHeroLevel-1]}</strong>
+                              <strong style={{ color: '#34d399' }}>{selectedLibraryHero.base_stats.max_mana[levelA-1]}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Physical Power</span>
-                              <strong style={{ color: '#3b82f6' }}>{selectedLibraryHero.base_stats.physical_power[libraryHeroLevel-1]}</strong>
+                              <strong style={{ color: '#3b82f6' }}>{selectedLibraryHero.base_stats.physical_power[levelA-1]}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Magical Power</span>
-                              <strong style={{ color: '#ec4899' }}>{selectedLibraryHero.base_stats.magical_power?.[libraryHeroLevel-1] ?? 0}</strong>
+                              <strong style={{ color: '#ec4899' }}>{selectedLibraryHero.base_stats.magical_power?.[levelA-1] ?? 0}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Physical Armor</span>
-                              <strong style={{ color: '#f59e0b' }}>{selectedLibraryHero.base_stats.physical_armor[libraryHeroLevel-1]}</strong>
+                              <strong style={{ color: '#f59e0b' }}>{selectedLibraryHero.base_stats.physical_armor[levelA-1]}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Magical Armor</span>
-                              <strong style={{ color: '#a855f7' }}>{selectedLibraryHero.base_stats.magical_armor[libraryHeroLevel-1]}</strong>
+                              <strong style={{ color: '#a855f7' }}>{selectedLibraryHero.base_stats.magical_armor[levelA-1]}</strong>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Right: Abilities overview */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <h4 style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white', margin: 0 }}>Ability Breakdown</h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          {selectedLibraryHero.abilities?.map((ab: any, idx: number) => (
-                            <div key={idx} style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', gap: '12px' }}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={ab.image_url} alt={ab.display_name} style={{ width: '48px', height: '48px', borderRadius: '6px', alignSelf: 'flex-start' }} />
-                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <strong style={{ color: 'white', fontSize: '0.95rem' }}>{ab.display_name}</strong>
-                                  <span style={{ fontSize: '0.7rem', color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>Key: {ab.key}</span>
-                                </div>
-                                <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }} dangerouslySetInnerHTML={{ __html: parseDescription(ab.game_description) }} />
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }} dangerouslySetInnerHTML={{ __html: parseDescription(ab.menu_description) }} />
-                                <div style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', gap: '12px', marginTop: '6px', background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
-                                  <span>Cooldown: {ab.cooldown?.join(' / ') || 'None'}s</span>
-                                  <span>Mana: {ab.cost?.join(' / ') || 'None'}</span>
+                      {/* Right: Abilities overview & First Item Calculator */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <h4 style={{ fontWeight: 'bold', fontSize: '1rem', color: 'white', margin: 0 }}>Abilities (Click to inspect)</h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                            {selectedLibraryHero.abilities?.map((ab: any) => (
+                              <div
+                                key={ab.key}
+                                onClick={() => setSelectedAbility({ ...ab, heroName: selectedLibraryHero.display_name, heroColor: '#3b82f6' })}
+                                style={{ cursor: 'pointer', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(59, 130, 246, 0.3)', position: 'relative' }}
+                                title={`${selectedLibraryHero.display_name} - ${ab.display_name}`}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={ab.image_url} alt={ab.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <div style={{ position: 'absolute', top: 2, right: 2, background: 'black', borderRadius: '3px', padding: '1px 3px', fontSize: '10px', fontWeight: 'bold' }}>
+                                  {ab.key}
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* First Item Simulator Calculator */}
+                        <div style={{ background: '#090d16', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div>
+                            <h4 style={{ fontWeight: 'bold', fontSize: '1.05rem', color: '#60a5fa', margin: '0 0 4px 0' }}>🧪 First Item Calculator</h4>
+                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>Select an item to simulate stat changes and evaluate passive/active scaling effects.</p>
+                          </div>
+
+                          <select
+                            value={libraryCalculatorItem?.slug || ''}
+                            onChange={(e) => {
+                              const it = items.find(i => i.slug === e.target.value)
+                              setLibraryCalculatorItem(it || null)
+                            }}
+                            style={{ width: '100%', padding: '10px', background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'white', fontSize: '0.85rem' }}
+                          >
+                            <option value="">-- Choose First Item --</option>
+                            {items.filter(i => i.is_final_item && i.slot_type !== 'Crest').map(i => (
+                              <option key={i.slug} value={i.slug}>{i.display_name} ({i.total_price}g)</option>
+                            ))}
+                          </select>
+
+                          {libraryCalculatorItem && (() => {
+                            const basePower = selectedLibraryHero.base_stats.physical_power[levelA-1]
+                            const baseMagicalPower = selectedLibraryHero.base_stats.magical_power?.[levelA-1] ?? 0
+                            const baseHealth = selectedLibraryHero.base_stats.max_health[levelA-1]
+                            const baseArmor = selectedLibraryHero.base_stats.physical_armor[levelA-1]
+                            const baseMagicalArmor = selectedLibraryHero.base_stats.magical_armor[levelA-1]
+
+                            const itemPower = libraryCalculatorItem.stats.physical_power || 0
+                            const itemMagicalPower = libraryCalculatorItem.stats.magical_power || libraryCalculatorItem.stats.energy_power || 0
+                            const itemHealth = libraryCalculatorItem.stats.max_health || libraryCalculatorItem.stats.health || 0
+                            const itemArmor = libraryCalculatorItem.stats.physical_armor || 0
+                            const itemMagicalArmor = libraryCalculatorItem.stats.magical_armor || 0
+                            const itemHaste = libraryCalculatorItem.stats.ability_haste || 0
+
+                            const formatChange = (base: number, added: number, color: string) => {
+                              if (added === 0) return <span>{Math.round(base)}</span>
+                              return (
+                                <span>
+                                  {Math.round(base)} &rarr; <strong style={{ color }}>{Math.round(base + added)}</strong> (+{Math.round(added)})
+                                </span>
+                              )
+                            }
+
+                            const evaluateItemEffectText = (desc: string) => {
+                              let evaluated = desc
+                              const physPower = basePower + itemPower
+                              const magPower = baseMagicalPower + itemMagicalPower
+                              const maxHealth = baseHealth + itemHealth
+
+                              evaluated = evaluated.replace(/(\+)?(\d+(?:\.\d+)?)%\s*(Physical Power|Magical Power|Max Health|Bonus Health|Armor)/gi, (match, sign, percentStr, statName) => {
+                                const percent = parseFloat(percentStr)
+                                let val = 0
+                                let color = '#3b82f6'
+                                if (statName.toLowerCase().includes('physical')) {
+                                  val = (percent / 100) * physPower
+                                  color = '#f97316'
+                                } else if (statName.toLowerCase().includes('magical') || statName.toLowerCase().includes('energy')) {
+                                  val = (percent / 100) * magPower
+                                  color = '#a855f7'
+                                } else if (statName.toLowerCase().includes('health')) {
+                                  val = (percent / 100) * maxHealth
+                                  color = '#10b981'
+                                }
+                                return `<strong>${match} [= +${Math.round(val)}]</strong>`
+                              })
+                              return evaluated
+                            }
+
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+                                {/* Stat shifts */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#94a3b8' }}>Max Health:</span>
+                                    {formatChange(baseHealth, itemHealth, '#34d399')}
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#94a3b8' }}>Physical Power:</span>
+                                    {formatChange(basePower, itemPower, '#3b82f6')}
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#94a3b8' }}>Magical Power:</span>
+                                    {formatChange(baseMagicalPower, itemMagicalPower, '#ec4899')}
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#94a3b8' }}>Physical Armor:</span>
+                                    {formatChange(baseArmor, itemArmor, '#f59e0b')}
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#94a3b8' }}>Magical Armor:</span>
+                                    {formatChange(baseMagicalArmor, itemMagicalArmor, '#a855f7')}
+                                  </div>
+                                </div>
+
+                                {/* Cooldown shift */}
+                                {itemHaste > 0 && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '10px' }}>
+                                    <strong style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>Ability Cooldowns with {itemHaste} Haste:</strong>
+                                    {selectedLibraryHero.abilities?.filter((a: any) => a.cooldown && a.cooldown.length > 0).map((a: any) => {
+                                      const factor = 100 / (100 + itemHaste)
+                                      const newCds = a.cooldown.map((cd: number) => (cd * factor).toFixed(1))
+                                      return (
+                                        <div key={a.key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                          <span style={{ color: '#94a3b8' }}>{a.display_name} ({a.key}):</span>
+                                          <span>
+                                            {a.cooldown.join('/')}s &rarr; <strong style={{ color: '#60a5fa' }}>{newCds.join('/')}s</strong>
+                                          </span>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* Passive effect scaling value calculations */}
+                                {libraryCalculatorItem.effects && libraryCalculatorItem.effects.length > 0 && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '10px' }}>
+                                    <strong style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>Evaluated Passive Scaling Effects:</strong>
+                                    {libraryCalculatorItem.effects.map((eff: any, idx: number) => (
+                                      <div key={idx} style={{ background: '#111827', padding: '10px', borderRadius: '6px', fontSize: '0.75rem', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                        <div style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '2px' }}>{eff.name}</div>
+                                        <div style={{ color: '#cbd5e1', lineHeight: '1.4' }} dangerouslySetInnerHTML={{ __html: evaluateItemEffectText(eff.menu_description) }} />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </div>
                       </div>
 
@@ -3730,7 +4115,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
               <div>
                 {!selectedLibraryItem ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px' }}>
-                    {items.filter(i => i.slot_type !== 'Crest').map((item) => (
+                    {filteredLibraryItems.map((item) => (
                       <div
                         key={item.slug}
                         onClick={() => setSelectedLibraryItem(item)}
@@ -3815,7 +4200,12 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                             {selectedLibraryItem.requirements && selectedLibraryItem.requirements.length > 0 ? (
                               <div style={{ display: 'flex', gap: '12px' }}>
                                 {selectedLibraryItem.requirements.map((reqSlug) => {
-                                  const reqObj = items.find(it => it.slug === reqSlug)
+                                  const cleanReq = reqSlug.toLowerCase().replace(/[^a-z0-9]/g, '')
+                                  const reqObj = items.find(it => {
+                                    const cleanSlug = it.slug.toLowerCase().replace(/[^a-z0-9]/g, '')
+                                    const cleanName = (it.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+                                    return cleanSlug === cleanReq || cleanName === cleanReq
+                                  })
                                   if (!reqObj) return null
                                   return (
                                     <div
@@ -3849,7 +4239,12 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                             {selectedLibraryItem.build_paths && selectedLibraryItem.build_paths.length > 0 ? (
                               <div style={{ display: 'flex', gap: '12px' }}>
                                 {selectedLibraryItem.build_paths.map((pSlug) => {
-                                  const pathObj = items.find(it => it.slug === pSlug)
+                                  const cleanPath = pSlug.toLowerCase().replace(/[^a-z0-9]/g, '')
+                                  const pathObj = items.find(it => {
+                                    const cleanSlug = it.slug.toLowerCase().replace(/[^a-z0-9]/g, '')
+                                    const cleanName = (it.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+                                    return cleanSlug === cleanPath || cleanName === cleanPath
+                                  })
                                   if (!pathObj) return null
                                   return (
                                     <div
@@ -3880,7 +4275,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
             {/* 5.3 CRESTS SECTION */}
             {librarySection === 'crests' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px' }}>
-                {items.filter(i => i.slot_type === 'Crest').map((crest) => (
+                {filteredLibraryCrests.map((crest) => (
                   <div
                     key={crest.slug}
                     onClick={() => { setSelectedLibraryItem(crest); setLibrarySection('items'); }}
@@ -3899,7 +4294,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
               <div>
                 {!selectedLibraryEternal ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                    {eternals.map((et) => (
+                    {filteredLibraryEternals.map((et) => (
                       <div
                         key={et.slug || et.name}
                         onClick={() => setSelectedLibraryEternal(et)}
@@ -3972,25 +4367,22 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', margin: '0 0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>Predecessor Patch Notes History</h3>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <strong style={{ color: 'white', fontSize: '1rem' }}>Patch v1.16.2</strong>
-                      <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>Released: 2026-07-02</span>
+                  {filteredLibraryPatches.map((p: any, idx: number) => (
+                    <div key={idx} style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <strong style={{ color: 'white', fontSize: '1rem' }}>{p.version}</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>Released: {p.released}</span>
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>
+                        {p.content}
+                      </p>
                     </div>
-                    <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>
-                      Balance adjustments for new Items including Tainted Blade. Offlaners pick rate adjustment. Level-based armor growth adjustments on support classes.
-                    </p>
-                  </div>
-
-                  <div style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <strong style={{ color: 'white', fontSize: '1rem' }}>Patch v1.15.0</strong>
-                      <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>Released: 2026-06-15</span>
+                  ))}
+                  {filteredLibraryPatches.length === 0 && (
+                    <div style={{ color: '#64748b', fontSize: '0.9rem', textAlign: 'center', padding: '20px' }}>
+                      No patch notes found matching "{librarySearchQuery}".
                     </div>
-                    <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>
-                      Ingested 12 confirmed game-wide Eternals minor blessing categories. Introduced scaling damage multipliers.
-                    </p>
-                  </div>
+                  )}
                 </div>
               </div>
             )}
