@@ -3528,8 +3528,10 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
                       {/* Left: Image, Level Slider, and dynamic stats */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={selectedLibraryHero.image_url} alt={selectedLibraryHero.display_name} style={{ width: '100%', borderRadius: '12px', aspectRatio: '1/1', objectFit: 'cover' }} />
+                        <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={selectedLibraryHero.image_url} alt={selectedLibraryHero.display_name} style={{ width: '50%', maxWidth: '240px', borderRadius: '12px', aspectRatio: '1/1', objectFit: 'cover' }} />
+                        </div>
                         
                         <div style={{ background: '#090d16', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
