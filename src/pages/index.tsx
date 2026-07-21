@@ -221,6 +221,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
   const [libraryHeroLevel, setLibraryHeroLevel] = useState<number>(1)
   const [librarySearchQuery, setLibrarySearchQuery] = useState('')
   const [libraryCalculatorItem, setLibraryCalculatorItem] = useState<ItemDoc | null>(null)
+  const [calculatorTier, setCalculatorTier] = useState<number>(3)
 
   // ── Revamped Feed States ───────────────────────────────────────────────────
   const [feedFilter, setFeedFilter] = useState<'all' | 'official' | 'ai_posts' | 'youtube'>('all')
@@ -3860,19 +3861,83 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                             <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>Select an item to simulate stat changes and evaluate passive/active scaling effects.</p>
                           </div>
 
-                          <select
-                            value={libraryCalculatorItem?.slug || ''}
-                            onChange={(e) => {
-                              const it = items.find(i => i.slug === e.target.value)
-                              setLibraryCalculatorItem(it || null)
-                            }}
-                            style={{ width: '100%', padding: '10px', background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'white', fontSize: '0.85rem' }}
-                          >
-                            <option value="">-- Choose First Item --</option>
-                            {items.filter(i => i.is_final_item && i.slot_type !== 'Crest').map(i => (
-                              <option key={i.slug} value={i.slug}>{i.display_name} ({i.total_price}g)</option>
-                            ))}
-                          </select>
+                          {/* Calculator Tier Tabs */}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {[
+                              { value: 3, label: 'Tier 3 (Legendary)' },
+                              { value: 2, label: 'Tier 2 (T2)' },
+                              { value: 1, label: 'Tier 1 (T1)' }
+                            ].map(t => {
+                              const isActive = calculatorTier === t.value
+                              return (
+                                <button
+                                  key={t.value}
+                                  onClick={() => setCalculatorTier(t.value)}
+                                  style={{
+                                    flex: 1,
+                                    padding: '6px 0',
+                                    borderRadius: '6px',
+                                    border: isActive ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.08)',
+                                    background: isActive ? 'rgba(59,130,246,0.15)' : '#090d16',
+                                    color: isActive ? '#60a5fa' : '#94a3b8',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  {t.label}
+                                </button>
+                              )
+                            })}
+                          </div>
+
+                          {/* Horizontally Scrollable Carousel of items */}
+                          <div style={{
+                            display: 'flex',
+                            gap: '10px',
+                            overflowX: 'auto',
+                            paddingBottom: '8px',
+                            borderBottom: '1px solid rgba(255,255,255,0.06)',
+                            scrollbarWidth: 'thin'
+                          }}>
+                            {items
+                              .filter(i => {
+                                if (i.slot_type === 'Crest') return false
+                                if (calculatorTier === 3) return i.is_final_item === true
+                                return i.tier === calculatorTier
+                              })
+                              .map((item) => {
+                                const isSelected = libraryCalculatorItem?.slug === item.slug
+                                return (
+                                  <div
+                                    key={item.slug}
+                                    onClick={() => setLibraryCalculatorItem(isSelected ? null : item)}
+                                    style={{
+                                      flexShrink: 0,
+                                      width: '74px',
+                                      cursor: 'pointer',
+                                      borderRadius: '8px',
+                                      background: isSelected ? 'rgba(59,130,246,0.1)' : '#111827',
+                                      border: isSelected ? '2px solid #3b82f6' : '2px solid rgba(255,255,255,0.05)',
+                                      padding: '6px',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      textAlign: 'center',
+                                      transition: 'all 0.2s'
+                                    }}
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={item.image_url} alt={item.display_name} style={{ width: '36px', height: '36px', borderRadius: '4px' }} />
+                                    <span style={{ fontSize: '0.65rem', color: isSelected ? '#60a5fa' : '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', fontWeight: isSelected ? 'bold' : 'normal' }}>
+                                      {item.display_name}
+                                    </span>
+                                  </div>
+                                )
+                              })}
+                          </div>
 
                           {libraryCalculatorItem && (() => {
                             const basePower = selectedLibraryHero.base_stats.physical_power[levelA-1]
@@ -3902,24 +3967,68 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                               const physPower = basePower + itemPower
                               const magPower = baseMagicalPower + itemMagicalPower
                               const maxHealth = baseHealth + itemHealth
+                              const physArmor = baseArmor + itemArmor
+                              const magArmor = baseMagicalArmor + itemMagicalArmor
 
+                              // 1. Evaluate tag-based percentages: e.g. <AbilityPowerText>(+3%)</AbilityPowerText>
+                              const tagRegex = /<([a-zA-Z_]+)>([^\d%]*?)(\d+(?:\.\d+)?)%([^\d%]*?)<\/\1>/gi
+                              evaluated = evaluated.replace(tagRegex, (match, tagName, prefix, percentStr, suffix) => {
+                                const percent = parseFloat(percentStr)
+                                let statVal = 0
+                                let statColor = '#3b82f6'
+                                const tagLower = tagName.toLowerCase()
+
+                                if (tagLower.includes('abilitypower')) {
+                                  statVal = magPower
+                                  statColor = '#60a5fa'
+                                } else if (tagLower.includes('attackdamage')) {
+                                  statVal = physPower
+                                  statColor = '#f97316'
+                                } else if (tagLower.includes('health') || tagLower.includes('shield')) {
+                                  statVal = maxHealth
+                                  statColor = '#22c55e'
+                                } else if (tagLower.includes('armor')) {
+                                  statVal = physArmor
+                                  statColor = '#f59e0b'
+                                } else if (tagLower.includes('mrtext') || tagLower.includes('mr_text')) {
+                                  statVal = magArmor
+                                  statColor = '#a855f7'
+                                }
+
+                                const calculatedBonus = (percent / 100) * statVal
+                                const showPlus = prefix.includes('+') || calculatedBonus >= 0
+                                return `<span style="color: ${statColor}; font-weight: bold;">(${showPlus ? '+' : ''}${Math.round(calculatedBonus)})</span>`
+                              })
+
+                              // 2. Evaluate plain text percentages: e.g. (+30% Physical Power)
                               evaluated = evaluated.replace(/(\+)?(\d+(?:\.\d+)?)%\s*(Physical Power|Magical Power|Max Health|Bonus Health|Armor)/gi, (match, sign, percentStr, statName) => {
                                 const percent = parseFloat(percentStr)
                                 let val = 0
                                 let color = '#3b82f6'
-                                if (statName.toLowerCase().includes('physical')) {
+                                const nameLower = statName.toLowerCase()
+                                if (nameLower.includes('physical')) {
                                   val = (percent / 100) * physPower
                                   color = '#f97316'
-                                } else if (statName.toLowerCase().includes('magical') || statName.toLowerCase().includes('energy')) {
+                                } else if (nameLower.includes('magical') || nameLower.includes('energy')) {
                                   val = (percent / 100) * magPower
                                   color = '#a855f7'
-                                } else if (statName.toLowerCase().includes('health')) {
+                                } else if (nameLower.includes('health')) {
                                   val = (percent / 100) * maxHealth
                                   color = '#10b981'
                                 }
-                                return `<strong>${match} [= +${Math.round(val)}]</strong>`
+                                return `<strong style="color: ${color}">+${Math.round(val)}</strong>`
                               })
-                              return evaluated
+
+                              // 3. Summing up base values and calculated bonuses: e.g., "3 <span...>+12</span>" -> "3 (+12) [= 15]"
+                              const sumRegex = /(\d+)\s*(<span[^>]*>\s*\((?:\+)?(\d+)\)\s*<\/span>)/gi
+                              evaluated = evaluated.replace(sumRegex, (match, baseStr, spanStr, bonusStr) => {
+                                const baseVal = parseInt(baseStr, 10)
+                                const bonusVal = parseInt(bonusStr, 10)
+                                const total = baseVal + bonusVal
+                                return `${baseStr} ${spanStr} <strong style="color: #10b981;">[= ${total}]</strong>`
+                              })
+
+                              return parseDescription(evaluated)
                             }
 
                             return (
