@@ -3782,7 +3782,7 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                       )
                     })()}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px', minWidth: 0 }}>
                       {/* Left: Image, Level Slider, and dynamic stats */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
@@ -3806,37 +3806,37 @@ export default function Dashboard({ heroes = [], items = [], eternals = [], feed
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Max Health</span>
-                              <strong style={{ color: '#34d399' }}>{selectedLibraryHero.base_stats.max_health[levelA-1]}</strong>
+                              <strong style={{ color: '#34d399' }}>{Math.round(selectedLibraryHero.base_stats.max_health[levelA-1])}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Max Mana</span>
-                              <strong style={{ color: '#34d399' }}>{selectedLibraryHero.base_stats.max_mana[levelA-1]}</strong>
+                              <strong style={{ color: '#34d399' }}>{Math.round(selectedLibraryHero.base_stats.max_mana[levelA-1])}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Physical Power</span>
-                              <strong style={{ color: '#3b82f6' }}>{selectedLibraryHero.base_stats.physical_power[levelA-1]}</strong>
+                              <strong style={{ color: '#3b82f6' }}>{Math.round(selectedLibraryHero.base_stats.physical_power[levelA-1])}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: '#94a3b8' }}>Magical Power</span>
-                              <strong style={{ color: '#ec4899' }}>{selectedLibraryHero.base_stats.magical_power?.[levelA-1] ?? 0}</strong>
+                              <strong style={{ color: '#ec4899' }}>{Math.round(selectedLibraryHero.base_stats.magical_power?.[levelA-1] ?? 0)}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', whiteSpace: 'nowrap' }}>
                               <span style={{ color: '#94a3b8' }}>Physical Armor</span>
-                              <strong style={{ color: '#f59e0b' }}>{selectedLibraryHero.base_stats.physical_armor[levelA-1]}</strong>
+                              <strong style={{ color: '#f59e0b' }}>{Math.round(selectedLibraryHero.base_stats.physical_armor[levelA-1])}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', whiteSpace: 'nowrap' }}>
                               <span style={{ color: '#94a3b8' }}>Magical Armor</span>
-                              <strong style={{ color: '#a855f7' }}>{selectedLibraryHero.base_stats.magical_armor[levelA-1]}</strong>
+                              <strong style={{ color: '#a855f7' }}>{Math.round(selectedLibraryHero.base_stats.magical_armor[levelA-1])}</strong>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Right: Abilities overview & First Item Calculator */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
                         <div style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           <h4 style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'white', margin: 0 }}>Abilities (Click to inspect)</h4>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', maxWidth: '280px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', maxWidth: '300px' }}>
                             {selectedLibraryHero.abilities?.map((ab: any) => (
                               <div
                                 key={ab.key}
