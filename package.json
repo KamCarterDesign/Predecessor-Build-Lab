@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "sync:heroes": "npx tsx scripts/sync-heroes.ts",
+    "sync:augments": "npx tsx scripts/sync-augments.ts",
     "sync:items": "npx tsx scripts/sync-items.ts",
     "sync:eternals": "npx tsx scripts/sync-eternals.ts",
     "sync:matches": "npx tsx scripts/sync-matches.ts",

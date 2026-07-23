@@ -2,17 +2,95 @@ rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 8, 14);
+
+    // ── Public Reference Data (Read-Only) ──────────────────────────────
+    // Heroes, Items, Eternals, Patches, Feed, Meta — written only by server/admin scripts
+    match /heroes/{heroId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /items/{itemId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /eternals/{eternalId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /patches/{patchId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /feed_items/{feedId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /meta_snapshots/{snapshotId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /meta_narratives/{narrativeId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /hero_statistics/{statId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /matches/{matchId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ── User Documents ─────────────────────────────────────────────────
+    // Each user can read/write only their own profile document
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid;
+
+      // User's saved builds sub-collection
+      match /builds/{buildId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // User's saved posts sub-collection
+      match /posts/{postId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // ── Shared Builds (Community) ──────────────────────────────────────
+    match /shared_builds/{buildId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null
+                            && request.auth.token.admin == true;
+    }
+
+    // ── AI Posts (Moderation Pipeline) ──────────────────────────────────
+    match /ai_posts/{postId} {
+      // Public can read approved posts; authors can read their own; admins can read all
+      allow read: if resource.data.status == 'approved'
+                  || (request.auth != null && resource.data.authorId == request.auth.uid)
+                  || (request.auth != null && request.auth.token.admin == true);
+
+      // Logged-in users can create posts with pending status
+      allow create: if request.auth != null
+                    && request.resource.data.status == 'pending';
+
+      // Only admins can approve, reject, or delete posts
+      allow update, delete: if request.auth != null
+                            && request.auth.token.admin == true;
+    }
+
+    // ── Email Templates & Logs (Admin Only) ────────────────────────────
+    match /email_templates/{templateId} {
+      allow read, write: if request.auth != null
+                         && request.auth.token.admin == true;
+    }
+    match /email_logs/{logId} {
+      allow read, write: if request.auth != null
+                         && request.auth.token.admin == true;
     }
   }
 }

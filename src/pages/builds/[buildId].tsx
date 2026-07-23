@@ -39,10 +39,45 @@ export default function SharedBuildPage({ build, error }: SharedBuildProps) {
     );
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://predecessorbuildlab.com';
+  const canonicalUrl = `${siteUrl}/builds/${build.id || ''}`;
+  const pageTitle = `${build.name} - ${build.heroName} Build | Predecessor Labs`;
+  const pageDescription = build.description
+    || `${build.heroName} ${build.role} build featuring ${build.items?.join(', ') || 'custom items'}. Created by ${build.authorName} on Predecessor Labs.`;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    name: build.name,
+    description: pageDescription,
+    author: { '@type': 'Person', name: build.authorName },
+    publisher: { '@type': 'Organization', name: 'Predecessor Build Lab', url: siteUrl },
+    url: canonicalUrl,
+  };
+
   return (
     <div style={{ padding: '40px', color: 'white', maxWidth: '800px', margin: '0 auto' }}>
       <Head>
-        <title>{build.name} - Predecessor Labs</title>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+
+        {/* OpenGraph Tags */}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonicalUrl} />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </Head>
 
       <div style={{ background: '#111827', borderRadius: '16px', padding: '32px', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -76,6 +111,15 @@ export default function SharedBuildPage({ build, error }: SharedBuildProps) {
             <h3 style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>Crest</h3>
             <div style={{ background: '#1e293b', padding: '8px 16px', borderRadius: '8px', border: '1px solid #3b82f6', display: 'inline-block', marginBottom: '24px' }}>
               {build.crest}
+            </div>
+          </>
+        )}
+
+        {build.augment && (
+          <>
+            <h3 style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>Selected Augment</h3>
+            <div style={{ background: '#1e293b', padding: '8px 16px', borderRadius: '8px', border: '1px solid #10b981', display: 'inline-block', marginBottom: '24px' }}>
+              {build.augment}
             </div>
           </>
         )}

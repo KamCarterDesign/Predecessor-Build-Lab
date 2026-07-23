@@ -23,7 +23,25 @@ export default function AdminDashboard() {
   const [templateBody, setTemplateBody] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [templateMessage, setTemplateMessage] = useState('')
-  const [activeTab, setActiveTab] = useState<'sync' | 'emails' | 'ai_posts'>('ai_posts')
+  const [activeTab, setActiveTab] = useState<'sync' | 'emails' | 'ai_posts' | 'home'>('ai_posts')
+
+  // ── Home Layout & Hero Settings State ──────────────────────────────────────
+  const [homeSettings, setHomeSettings] = useState<{
+    featuredPostIds: string[]
+    customCtaText: string
+    customCtaUrl: string
+    featuredVideos: any[]
+  }>({
+    featuredPostIds: [],
+    customCtaText: 'SAVE BUILD FOR LATER',
+    customCtaUrl: '',
+    featuredVideos: [],
+  })
+  const [newVideoTitle, setNewVideoTitle] = useState('')
+  const [newVideoId, setNewVideoId] = useState('')
+  const [newVideoChannel, setNewVideoChannel] = useState('')
+  const [savingHomeSettings, setSavingHomeSettings] = useState(false)
+  const [homeSaveMsg, setHomeSaveMsg] = useState('')
 
   // ── AI Posts Review State ──────────────────────────────────────────────────
   const [adminPosts, setAdminPosts] = useState<any[]>([])
@@ -43,7 +61,66 @@ export default function AdminDashboard() {
     setMounted(true)
     fetchTemplates()
     fetchAdminPosts()
+    fetchHomeSettings()
   }, [])
+
+  const fetchHomeSettings = async () => {
+    try {
+      const res = await fetch('/api/home/settings')
+      const data = await res.json()
+      if (data.settings) {
+        setHomeSettings(data.settings)
+      }
+    } catch (err) {
+      console.error('Error fetching home settings:', err)
+    }
+  }
+
+  const handleSaveHomeSettings = async () => {
+    setSavingHomeSettings(true)
+    setHomeSaveMsg('')
+    try {
+      const res = await fetch('/api/home/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: homeSettings }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setHomeSaveMsg('✅ Home settings saved successfully!')
+      } else {
+        setHomeSaveMsg(`❌ Error saving home settings: ${data.error}`)
+      }
+    } catch (err: any) {
+      setHomeSaveMsg(`❌ Save failed: ${err.message}`)
+    } finally {
+      setSavingHomeSettings(false)
+    }
+  }
+
+  const handleAddVideo = () => {
+    if (!newVideoTitle || !newVideoId) return
+    const newVideo = {
+      id: `vid-${Date.now()}`,
+      title: newVideoTitle,
+      videoId: newVideoId,
+      channelTitle: newVideoChannel || 'Community Creator'
+    }
+    setHomeSettings((prev) => ({
+      ...prev,
+      featuredVideos: [...prev.featuredVideos, newVideo]
+    }))
+    setNewVideoTitle('')
+    setNewVideoId('')
+    setNewVideoChannel('')
+  }
+
+  const handleRemoveVideo = (id: string) => {
+    setHomeSettings((prev) => ({
+      ...prev,
+      featuredVideos: prev.featuredVideos.filter((v: any) => v.id !== id)
+    }))
+  }
 
   const fetchAdminPosts = async () => {
     setLoadingPosts(true)
@@ -297,7 +374,191 @@ export default function AdminDashboard() {
         >
           ✉️ Email Templates Manager
         </button>
+        <button
+          onClick={() => setActiveTab('home')}
+          style={{ padding: '8px 16px', background: activeTab === 'home' ? '#3b82f6' : '#1e293b', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          🏠 Home Layout & Hero Settings
+        </button>
       </div>
+
+      {/* TAB 4: HOME LAYOUT & HERO SETTINGS */}
+      {activeTab === 'home' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Header Action Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1e293b', padding: '16px 20px', borderRadius: '8px', border: '1px solid #334155' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#38bdf8' }}>Home Page & Hero Banner Controls</h2>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                Select stored posts for the Hero Slider, customize CTAs, and manage featured video guides.
+              </p>
+            </div>
+            <button
+              onClick={handleSaveHomeSettings}
+              disabled={savingHomeSettings}
+              style={{ padding: '10px 24px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              {savingHomeSettings ? 'Saving...' : '💾 Save Home Settings'}
+            </button>
+          </div>
+
+          {homeSaveMsg && (
+            <div style={{ padding: '12px 16px', background: homeSaveMsg.includes('✅') ? '#059669' : '#dc2626', color: 'white', borderRadius: '6px', fontWeight: 'bold' }}>
+              {homeSaveMsg}
+            </div>
+          )}
+
+          {/* Section 1: Hero Banner Slider Posts */}
+          <div style={{ background: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', color: '#f87171' }}>1. Hero Banner Featured Posts (Slider)</h3>
+            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 16px 0' }}>
+              Select posts from your stored/approved articles to populate the top Hero Banner slider on the home page.
+            </p>
+
+            {adminPosts.length === 0 ? (
+              <div style={{ padding: '12px', background: '#0f172a', borderRadius: '6px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                No stored posts found yet. Default sample slides will display until posts are created and selected here.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                {adminPosts.map((post) => {
+                  const isSelected = homeSettings.featuredPostIds.includes(post.id)
+                  return (
+                    <div
+                      key={post.id}
+                      onClick={() => {
+                        setHomeSettings((prev) => ({
+                          ...prev,
+                          featuredPostIds: isSelected
+                            ? prev.featuredPostIds.filter((id) => id !== post.id)
+                            : [...prev.featuredPostIds, post.id]
+                        }))
+                      }}
+                      style={{
+                        padding: '14px',
+                        borderRadius: '6px',
+                        border: isSelected ? '2px solid #38bdf8' : '1px solid #334155',
+                        background: isSelected ? 'rgba(56, 189, 248, 0.1)' : '#0f172a',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{ fontWeight: 'bold', color: isSelected ? '#38bdf8' : 'white', fontSize: '0.9rem' }}>
+                        {isSelected ? '✓ ' : ''}{post.title}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        Category: {post.category || 'Guide'} | Status: {post.status}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Custom Secondary CTA Options */}
+          <div style={{ background: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', color: '#facc15' }}>2. Secondary Hero CTA Customization</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>
+                  Button Label Text (e.g., "SAVE BUILD FOR LATER")
+                </label>
+                <input
+                  type="text"
+                  value={homeSettings.customCtaText}
+                  onChange={(e) => setHomeSettings({ ...homeSettings, customCtaText: e.target.value })}
+                  style={{ width: '100%', padding: '10px', background: '#0f172a', border: '1px solid #334155', color: 'white', borderRadius: '6px', fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>
+                  Optional Target Link URL (leave blank to toggle bookmark)
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://example.com/build-builder"
+                  value={homeSettings.customCtaUrl}
+                  onChange={(e) => setHomeSettings({ ...homeSettings, customCtaUrl: e.target.value })}
+                  style={{ width: '100%', padding: '10px', background: '#0f172a', border: '1px solid #334155', color: 'white', borderRadius: '6px', fontFamily: 'monospace' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Featured YouTube Videos */}
+          <div style={{ background: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', color: '#a78bfa' }}>3. Featured YouTube Videos Carousel</h3>
+
+            {/* List existing videos */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              {homeSettings.featuredVideos.map((video: any) => (
+                <div key={video.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', padding: '12px 16px', borderRadius: '6px', border: '1px solid #334155' }}>
+                  <div>
+                    <strong style={{ color: 'white', fontSize: '0.9rem' }}>{video.title}</strong>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>
+                      ID: {video.videoId} | Channel: {video.channelTitle}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveVideo(video.id)}
+                    style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.75rem' }}
+                  >
+                    ✕ Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add new video form */}
+            <div style={{ borderTop: '1px solid #334155', paddingTop: '16px' }}>
+              <strong style={{ color: 'white', fontSize: '0.85rem', display: 'block', marginBottom: '10px' }}>Add New Featured Video:</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Video Title</label>
+                  <input
+                    type="text"
+                    placeholder="TwinBlast Itemization Guide"
+                    value={newVideoTitle}
+                    onChange={(e) => setNewVideoTitle(e.target.value)}
+                    style={{ width: '100%', padding: '8px', background: '#0f172a', border: '1px solid #334155', color: 'white', borderRadius: '4px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>YouTube Video ID</label>
+                  <input
+                    type="text"
+                    placeholder="5qap5aO4i9A"
+                    value={newVideoId}
+                    onChange={(e) => setNewVideoId(e.target.value)}
+                    style={{ width: '100%', padding: '8px', background: '#0f172a', border: '1px solid #334155', color: 'white', borderRadius: '4px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Channel Name</label>
+                  <input
+                    type="text"
+                    placeholder="Predecessor Hub"
+                    value={newVideoChannel}
+                    onChange={(e) => setNewVideoChannel(e.target.value)}
+                    style={{ width: '100%', padding: '8px', background: '#0f172a', border: '1px solid #334155', color: 'white', borderRadius: '4px' }}
+                  />
+                </div>
+                <button
+                  onClick={handleAddVideo}
+                  style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  + Add Video
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: DATA SYNC & ACTIONS */}
       {activeTab === 'sync' && (

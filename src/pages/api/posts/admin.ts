@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getFirestore } from '@/lib/firebase-admin'
+import { verifyAdminToken } from '@/lib/admin-auth'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const db = getFirestore()
@@ -24,6 +25,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
+    // Require admin authentication for all write operations
+    try {
+      await verifyAdminToken(req)
+    } catch (err: any) {
+      const status = err.statusCode || 401
+      return res.status(status).json({ error: err.message })
+    }
+
     try {
       const { action, postId, postData, status } = req.body
 

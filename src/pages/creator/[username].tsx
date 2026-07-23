@@ -48,10 +48,46 @@ export default function CreatorProfilePage({ creator, builds, error }: CreatorPr
     );
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://predecessorbuildlab.com';
+  const canonicalUrl = `${siteUrl}/creator/${creator.username}`;
+  const pageTitle = `${creator.username}'s Profile & Custom Builds | Predecessor Labs`;
+  const pageDescription = `Explore custom Predecessor theorycrafting builds and strategies created by ${creator.username}.`;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    name: pageTitle,
+    mainEntity: {
+      '@type': 'Person',
+      name: creator.username,
+      identifier: creator.username,
+    },
+    url: canonicalUrl,
+  };
+
   return (
     <div style={{ padding: '40px', color: 'white', maxWidth: '1000px', margin: '0 auto' }}>
       <Head>
-        <title>{creator.username}&apos;s Profile - Predecessor Labs</title>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+
+        {/* OpenGraph Tags */}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:url" content={canonicalUrl} />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </Head>
 
       <div style={{ background: '#111827', borderRadius: '16px', padding: '32px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '24px' }}>

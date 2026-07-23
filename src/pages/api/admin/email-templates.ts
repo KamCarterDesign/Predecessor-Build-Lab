@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getFirestore } from '@/lib/firebase-admin'
+import { verifyAdminToken } from '@/lib/admin-auth'
 
 const DEFAULT_TEMPLATES = [
   {
@@ -48,6 +49,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'POST') {
+      // Require admin authentication for template modifications
+      try {
+        await verifyAdminToken(req)
+      } catch (err: any) {
+        const status = err.statusCode || 401
+        return res.status(status).json({ error: err.message })
+      }
+
       const { id, name, subject, body } = req.body
 
       if (!id || !name || !subject || !body) {

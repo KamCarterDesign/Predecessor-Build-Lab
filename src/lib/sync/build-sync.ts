@@ -12,6 +12,7 @@ export interface SavedBuild {
   items: string[];
   crest: string | null;
   eternal: string | null;
+  augment?: string | null;
   gold?: number;
   
   // Hero B specs if duel build:
@@ -22,6 +23,7 @@ export interface SavedBuild {
   itemsB?: string[];
   crestB?: string | null;
   eternalB?: string | null;
+  augmentB?: string | null;
   goldB?: number;
   totalGold?: number;
 

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Block administrative and API routes from crawlers
+Disallow: /admin
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://predecessorbuildlab.com/api/sitemap

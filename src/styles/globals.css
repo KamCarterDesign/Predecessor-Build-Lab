@@ -1,0 +1,297 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   Predecessor Build Lab — Royal Night Design System
+   High-Contrast Cyberpunk & Glassmorphic MOBA Aesthetic
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Google Fonts (Inter & Space Grotesk) ─────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+/* ── Royal Night Tokens ────────────────────────────────────────────────────── */
+:root {
+  /* Background & Surface Colors */
+  --bg-page: #0b1326;
+  --bg-surface: #0b1326;
+  --bg-card: rgba(19, 27, 46, 0.85); /* surface-container-low glass */
+  --bg-card-hover: #171f33;          /* surface-container */
+  --bg-card-alt: #171f33;            /* surface-container */
+  --bg-card-high: #222a3d;           /* surface-container-high */
+  --bg-card-highest: #2d3449;        /* surface-container-highest */
+  --bg-input: #060e20;               /* surface-container-lowest */
+  --bg-overlay: rgba(6, 14, 32, 0.88);
+  --bg-header: rgba(11, 19, 38, 0.82);
+
+  /* Primary Accent (Royal Purple / Mana) */
+  --accent-primary: #d0bcff;
+  --accent-primary-container: #a078ff;
+  --accent-primary-glow: rgba(208, 188, 255, 0.35);
+  --accent-purple: #d0bcff;
+  --on-primary: #3c0091;
+
+  /* Secondary Accent (Imperial Gold / Prestige) */
+  --accent-secondary: #ffb95f;
+  --accent-secondary-container: #ee9800;
+  --accent-gold: #ffb95f;
+  --accent-gold-glow: rgba(238, 152, 0, 0.4);
+  --on-secondary: #2a1700;
+
+  /* Tertiary Accent (Vitality Green / Positive Data) */
+  --accent-tertiary: #4edea3;
+  --accent-green: #4edea3;
+  --accent-green-glow: rgba(78, 222, 163, 0.3);
+  --on-tertiary: #003824;
+
+  /* Status Colors */
+  --accent-red: #ffb4ab;
+  --accent-cyan: #6ffbbe;
+  --accent-discord: #5865F2;
+
+  /* Text Colors */
+  --text-primary: #dae2fd;
+  --text-heading: #dae2fd;
+  --text-muted: #958ea0;
+  --text-subtle: #cbc3d7;
+  --on-surface-variant: #cbc3d7;
+
+  /* Border Colors */
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-medium: #494454;
+  --border-input: #494454;
+  --outline-variant: #494454;
+  --outline: #958ea0;
+
+  /* Typography */
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-hud: 'Space Grotesk', sans-serif;
+  --font-stat: 'Space Grotesk', monospace;
+
+  /* Spacing Scale (4px base unit) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 64px;
+
+  /* Shapes & Radii — STRICT SHARP (0px) CORNERS for Royal Night HUD */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-full: 0px;
+
+  /* Depth & Glassmorphic Shadows */
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.6);
+  --shadow-tooltip: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(208, 188, 255, 0.2);
+  --shadow-dropdown: 0 10px 25px rgba(0, 0, 0, 0.7);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease-out;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease-out;
+}
+
+/* ── CSS Reset & Base Styles ───────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-radius: 0px !important; /* Force sharp rectangular geometry across design system */
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* ── Headlines & Text Defaults ─────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--text-heading);
+  letter-spacing: -0.02em;
+}
+
+/* HUD Labels & Stat Counters */
+.hud-label,
+.stat-value,
+.badge-caps {
+  font-family: var(--font-hud) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.russo-font {
+  font-family: var(--font-hud) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Keyframe Animations ───────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slowPan {
+  0% { background-position: 50% 30%; }
+  50% { background-position: 55% 40%; }
+  100% { background-position: 50% 30%; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(208, 188, 255, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(208, 188, 255, 0.6); }
+}
+
+/* ── Scrollbar Styling ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-input);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary-container);
+}
+
+/* ── Glassmorphic Cards ────────────────────────────────────────────────────── */
+.card-interactive,
+.card-glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-top: 1px solid rgba(208, 188, 255, 0.2); /* Top-border glass highlight */
+  border-radius: 0px;
+  transition: transform var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.card-interactive:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 20px rgba(208, 188, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+/* ── Royal Night Buttons ───────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 10px 18px;
+  border-radius: 0px;
+  font-family: var(--font-hud);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+/* Primary Button: Solid Imperial Gold with sharp 0px corners and gold hover glow */
+.btn-primary {
+  background: var(--accent-secondary-container);
+  border: 1px solid var(--accent-secondary);
+  color: var(--on-secondary);
+  font-weight: 700;
+}
+
+.btn-primary:hover {
+  background: var(--accent-secondary);
+  box-shadow: 0 0 20px var(--accent-gold-glow);
+  color: #000;
+}
+
+/* Secondary Button: Transparent with Royal Purple border */
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.btn-secondary:hover {
+  background: rgba(208, 188, 255, 0.1);
+  box-shadow: 0 0 15px var(--accent-primary-glow);
+}
+
+/* ── Input Styling ─────────────────────────────────────────────────────────── */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-input) !important;
+  color: var(--text-primary) !important;
+  border-radius: 0px !important;
+  font-family: var(--font-body);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary-container) !important;
+  box-shadow: 0 0 12px var(--accent-primary-glow);
+}
+
+/* ── Badges & Chips ────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 0px;
+  font-family: var(--font-hud);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.badge-primary {
+  background: var(--accent-primary-container);
+  color: #ffffff;
+}
+
+.badge-gold {
+  background: var(--accent-secondary-container);
+  color: var(--on-secondary);
+}
+
+.badge-green {
+  background: var(--accent-tertiary);
+  color: var(--on-tertiary);
+}
+
+/* ── Grid Container Utility ────────────────────────────────────────────────── */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-lg);
+}
+
+@media (max-width: 640px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+}

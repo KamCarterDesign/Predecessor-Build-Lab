@@ -38,11 +38,18 @@ export interface HeroDnaProfile {
   [key: string]: number
 }
 
+export interface HeroAugment {
+  title: string
+  description: string
+  image_url: string
+}
+
 export interface HeroDoc {
   id: number
   name: string
   display_name: string
   slug: string
+  augments?: HeroAugment[]
   image_url: string
   classes: string[]
   roles: string[]

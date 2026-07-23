@@ -14,3 +14,7 @@ build/
 
 # Env
 .env*.local
+
+# Build info
+*.tsbuildinfo
+

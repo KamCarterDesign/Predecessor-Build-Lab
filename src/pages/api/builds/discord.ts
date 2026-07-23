@@ -12,6 +12,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Missing build data or webhook URL' });
   }
 
+  // SSRF Protection: Only allow legitimate Discord webhook URLs
+  const allowedPrefixes = [
+    'https://discord.com/api/webhooks/',
+    'https://discordapp.com/api/webhooks/',
+  ];
+  const isAllowedUrl = allowedPrefixes.some(prefix => webhookUrl.startsWith(prefix));
+  if (!isAllowedUrl) {
+    return res.status(400).json({ error: 'Invalid webhook URL. Only Discord webhook URLs are permitted.' });
+  }
+
   try {
     const embed = {
       title: build.name,

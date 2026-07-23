@@ -3,7 +3,8 @@
  * Reads credentials from environment variables
  */
 import { initializeApp, cert, getApp, getApps, App } from 'firebase-admin/app'
-import { getFirestore as firestore } from 'firebase-admin/firestore'
+import { getFirestore as firestore, FieldValue } from 'firebase-admin/firestore'
+export { FieldValue }
 import { getStorage as storage } from 'firebase-admin/storage'
 import dotenv from 'dotenv'
 import path from 'path'
